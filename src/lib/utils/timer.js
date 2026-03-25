@@ -20,15 +20,18 @@ export function getRemainingTime(startTime, duration, isPaused = false, pausedAt
 }
 
 /**
- * Formatiert Zeit im Format MM:SS
+ * Formatiert Zeit im Format MM:SS (unterstützt auch negative Zeiten)
  * @param {number} milliseconds - Zeit in Millisekunden
  * @returns {string} Formatierte Zeit
  */
 export function formatTime(milliseconds) {
-	const totalSeconds = Math.ceil(milliseconds / 1000);
+	const isNegative = milliseconds < 0;
+	const absMilliseconds = Math.abs(milliseconds);
+	const totalSeconds = Math.ceil(absMilliseconds / 1000);
 	const minutes = Math.floor(totalSeconds / 60);
 	const seconds = totalSeconds % 60;
-	return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+	const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+	return isNegative ? `-${timeString}` : timeString;
 }
 
 /**

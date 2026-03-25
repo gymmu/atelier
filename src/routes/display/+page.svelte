@@ -5,6 +5,7 @@
 	import ProgressBar from '$lib/components/display/ProgressBar.svelte';
 	import TimerControl from '$lib/components/display/TimerControl.svelte';
 	import NextPhase from '$lib/components/display/NextPhase.svelte';
+	import SessionControls from '$lib/components/display/SessionControls.svelte';
 
 	let currentTime = $state(new Date());
 	let timeInterval;
@@ -89,6 +90,7 @@
 
 	<main class="display-content">
 		<div class="main-section">
+			<SessionControls />
 			<CurrentPhase />
 			<ProgressBar />
 			<NextPhase />

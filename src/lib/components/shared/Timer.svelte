@@ -28,10 +28,15 @@
 	});
 
 	let isExpired = $derived(remaining <= 0);
-	let progress = $derived((duration * 60 * 1000 - remaining) / (duration * 60 * 1000) * 100);
+	let isOvertime = $derived(remaining < 0);
+	let progress = $derived.by(() => {
+		const elapsed = duration * 60 * 1000 - remaining;
+		const percent = (elapsed / (duration * 60 * 1000)) * 100;
+		return Math.min(100, Math.max(0, percent));
+	});
 </script>
 
-<div class="timer" class:small={size === 'small'} class:large={size === 'large'} class:expired={isExpired}>
+<div class="timer" class:small={size === 'small'} class:large={size === 'large'} class:expired={isExpired} class:overtime={isOvertime}>
 	<span class="time">{formatTime(remaining)}</span>
 	{#if showProgress}
 		<div class="progress-bar">
@@ -64,6 +69,10 @@
 	}
 
 	.timer.expired .time {
+		color: #ff9800;
+	}
+
+	.timer.overtime .time {
 		color: #f44336;
 		animation: pulse 1s infinite;
 	}
@@ -83,6 +92,10 @@
 	}
 
 	.expired .progress-fill {
+		background: #ff9800;
+	}
+
+	.overtime .progress-fill {
 		background: #f44336;
 	}
 

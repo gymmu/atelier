@@ -22,7 +22,7 @@
 		return schedule.phases.reduce((sum, phase) => sum + phase.duration * 60 * 1000, 0);
 	});
 
-	let elapsedTotal = $derived(() => {
+	let elapsedTotal = $derived.by(() => {
 		if (!session || !schedule) return 0;
 		
 		let elapsed = 0;
@@ -31,25 +31,27 @@
 			elapsed += schedule.phases[i].duration * 60 * 1000;
 		}
 		
-		// Add current phase progress
+		// Add current phase progress (kann auch negativ sein wenn überzogen)
 		if (session.currentPhaseIndex < schedule.phases.length) {
 			const currentPhase = schedule.phases[session.currentPhaseIndex];
 			const phaseDuration = currentPhase.duration * 60 * 1000;
 			const phaseElapsed = session.isPaused
 				? session.pausedAt - session.phaseStartTime
 				: Date.now() - session.phaseStartTime;
+			// Begrenze auf maximum des Phase-Dauer für Gesamt-Progress
 			elapsed += Math.min(phaseElapsed, phaseDuration);
 		}
 		
 		return elapsed;
 	});
 
-	let progressPercent = $derived(() => {
+	let progressPercent = $derived.by(() => {
 		if (!totalDuration) return 0;
-		return Math.min(100, (elapsedTotal / totalDuration) * 100);
+		const percent = (elapsedTotal / totalDuration) * 100;
+		return Math.min(100, Math.max(0, percent));
 	});
 
-	let currentPhaseProgress = $derived(() => {
+	let currentPhaseProgress = $derived.by(() => {
 		if (!session || !schedule) return 0;
 		if (session.currentPhaseIndex >= schedule.phases.length) return 100;
 		
@@ -59,7 +61,9 @@
 			? session.pausedAt - session.phaseStartTime
 			: Date.now() - session.phaseStartTime;
 		
-		return Math.min(100, (phaseElapsed / phaseDuration) * 100);
+		const percent = (phaseElapsed / phaseDuration) * 100;
+		// Erlaube über 100% hinaus für Übersicht
+		return Math.min(150, Math.max(0, percent));
 	});
 </script>
 
@@ -82,7 +86,11 @@
 
 			<!-- Aktuelle Phase -->
 			<div class="progress-bar current">
-				<div class="progress-fill" style="width: {currentPhaseProgress}%"></div>
+				<div 
+					class="progress-fill" 
+					class:overtime={currentPhaseProgress > 100}
+					style="width: {currentPhaseProgress}%"
+				></div>
 			</div>
 		</div>
 
@@ -169,6 +177,23 @@
 		}
 		100% {
 			transform: translateX(100%);
+		}
+	}
+
+	.progress-fill.overtime {
+		background: linear-gradient(90deg, #f44336, #ff5722);
+	}
+
+	.progress-fill.overtime::after {
+		animation: pulse 1s infinite, shimmer 2s infinite;
+	}
+
+	@keyframes pulse {
+		0%, 100% {
+			opacity: 1;
+		}
+		50% {
+			opacity: 0.7;
 		}
 	}
 
