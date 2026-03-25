@@ -1,12 +1,24 @@
+<script>
+	import { base } from '$app/paths';
+</script>
+
 <div class="hero">
 	<div class="container">
 		<h1 class="title">
 			Willkommen im <span class="highlight">Atelier</span>
 		</h1>
 		<p class="description">
-			Ein kreativer Raum für innovative Ideen und digitale Projekte. Hier entstehen moderne
-			Webanwendungen mit modernsten Technologien.
+			Unterrichtsmanagement nach dem Atelier-Prinzip. Verwalten Sie Zeitpläne, steuern Sie
+			Phasen und behalten Sie individuelle Schüler-Timer im Blick.
 		</p>
+		<div class="actions">
+			<a href="{base}/admin" class="btn btn-primary">
+				⚙️ Zur Administration
+			</a>
+			<a href="{base}/display" target="_blank" class="btn btn-secondary">
+				🖥️ Beamer-Ansicht
+			</a>
+		</div>
 	</div>
 </div>
 
@@ -85,8 +97,52 @@
 		color: var(--color-text-secondary);
 		line-height: 1.8;
 		max-width: 600px;
-		margin: 0 auto;
+		margin: 0 auto 2rem;
 		animation: fadeInUp 0.8s ease-out 0.2s backwards;
+	}
+
+	.actions {
+		display: flex;
+		gap: 1rem;
+		justify-content: center;
+		flex-wrap: wrap;
+		animation: fadeInUp 0.8s ease-out 0.4s backwards;
+	}
+
+	.btn {
+		padding: 1rem 2rem;
+		border-radius: 8px;
+		font-size: 1rem;
+		font-weight: 600;
+		text-decoration: none;
+		transition: all 0.3s ease;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.btn-primary {
+		background: var(--color-primary);
+		color: white;
+		box-shadow: 0 4px 12px rgba(0, 123, 192, 0.3);
+	}
+
+	.btn-primary:hover {
+		background: #0096e0;
+		transform: translateY(-2px);
+		box-shadow: 0 6px 20px rgba(0, 123, 192, 0.4);
+	}
+
+	.btn-secondary {
+		background: rgba(255, 255, 255, 0.1);
+		color: var(--color-text);
+		border: 2px solid rgba(255, 255, 255, 0.2);
+	}
+
+	.btn-secondary:hover {
+		background: rgba(255, 255, 255, 0.15);
+		border-color: rgba(255, 255, 255, 0.3);
+		transform: translateY(-2px);
 	}
 
 	@keyframes fadeInUp {

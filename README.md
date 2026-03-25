@@ -1,11 +1,21 @@
 # Atelier
 
-Eine moderne Landing Page gebaut mit SvelteKit, Vite und automatischem GitHub Pages Deployment.
+Ein Unterrichtsmanagement-System nach dem Atelier-Prinzip, gebaut mit SvelteKit, Vite und automatischem GitHub Pages Deployment.
 
 ## Features
 
-- **SvelteKit** - Modernes Web-Framework mit Svelte 5
+### Unterrichtsverwaltung
+- **Zeitplan-Management** - Erstellen und verwalten Sie Zeitpläne für verschiedene Klassen und Lektionen
+- **Vordefinierte Phasen** - Nutzen Sie Standardphasen wie "Einstieg", "Instruktion", "Freie Arbeitsphase", "Präsentation", "Reflexion" und "Pause"
+- **Benutzerdefinierte Phasen** - Erstellen Sie eigene Phasen mit individuellen Namen, Icons und Farben
+- **Live-Anzeige** - Beamer-Ansicht zeigt den aktuellen Unterrichtsverlauf mit Countdown und Fortschrittsbalken
+- **Schüler-Timer** - Individuelle Timer für Schülerinnen und Schüler während freier Arbeitsphasen
+- **Session-Steuerung** - Starten, pausieren, stoppen und navigieren Sie durch die Unterrichtsphasen
+
+### Technologie
+- **SvelteKit** - Modernes Web-Framework mit Svelte 5 und Runes
 - **Vite** - Schnelles Build-Tool und Dev-Server
+- **localStorage** - Alle Daten werden lokal im Browser gespeichert
 - **Dunkles Theme** - Elegantes Design mit Hauptfarbe #007BC0
 - **Responsive Design** - Optimiert für Desktop, Tablet und Mobile
 - **GitHub Actions** - Automatisches Deployment auf GitHub Pages bei Push auf `main`
@@ -69,24 +79,73 @@ Um GitHub Pages zu aktivieren:
 3. Unter **Source** wähle **GitHub Actions**
 4. Der erste Push auf `main` triggert das Deployment
 
+## Verwendung
+
+### Admin-Bereich (`/admin`)
+
+1. **Zeitplan erstellen**: Klicken Sie auf "+ Neu" in der linken Seitenleiste
+2. **Phasen hinzufügen**: Wählen Sie vordefinierte Phasen oder erstellen Sie eigene
+3. **Session starten**: Klicken Sie auf "Session starten" um den Unterricht zu beginnen
+4. **Timer hinzufügen**: Fügen Sie individuelle Timer für Schülerinnen und Schüler hinzu
+5. **Beamer-Ansicht öffnen**: Klicken Sie auf "🖥️ Beamer-Ansicht öffnen" für die Live-Anzeige
+
+### Beamer-Ansicht (`/display`)
+
+Die Beamer-Ansicht zeigt:
+- Aktuelle Unterrichtsphase mit großem Countdown
+- Gesamtfortschritt und Phasenfortschritt
+- Nächste Phase in der Übersicht
+- Alle aktiven Schüler-Timer
+- Aktuelle Uhrzeit und Datum
+
+💡 **Tipp**: Drücken Sie F11 für Vollbildmodus auf dem Beamer
+
 ## Projektstruktur
 
 ```
 atelier/
 ├── .github/
 │   └── workflows/
-│       └── deploy.yml          # GitHub Actions Workflow
+│       └── deploy.yml                 # GitHub Actions Workflow
 ├── src/
+│   ├── lib/
+│   │   ├── components/
+│   │   │   ├── admin/                # Admin-Interface Components
+│   │   │   │   ├── ClassSelector.svelte
+│   │   │   │   ├── PhaseForm.svelte
+│   │   │   │   ├── ScheduleEditor.svelte
+│   │   │   │   └── TimerManager.svelte
+│   │   │   ├── display/              # Beamer-Ansicht Components
+│   │   │   │   ├── CurrentPhase.svelte
+│   │   │   │   ├── NextPhase.svelte
+│   │   │   │   ├── ProgressBar.svelte
+│   │   │   │   └── StudentTimers.svelte
+│   │   │   └── shared/               # Gemeinsame Components
+│   │   │       ├── PhaseIcon.svelte
+│   │   │       └── Timer.svelte
+│   │   ├── stores/                   # Svelte 5 Stores (Runes)
+│   │   │   ├── schedule.svelte.js
+│   │   │   └── timers.svelte.js
+│   │   └── utils/                    # Utility-Funktionen
+│   │       ├── constants.js
+│   │       ├── storage.js
+│   │       └── timer.js
 │   ├── routes/
-│   │   ├── +layout.svelte      # Layout mit globalem CSS Import
-│   │   ├── +layout.js          # Prerender Konfiguration
-│   │   └── +page.svelte        # Landing Page
-│   ├── app.html                # HTML Template
-│   └── app.css                 # Globale Styles
+│   │   ├── admin/
+│   │   │   ├── +page.svelte          # Admin-Interface
+│   │   │   └── +page.js
+│   │   ├── display/
+│   │   │   ├── +page.svelte          # Beamer-Ansicht
+│   │   │   └── +page.js
+│   │   ├── +layout.svelte            # Layout mit globalem CSS
+│   │   ├── +layout.js                # Prerender Konfiguration
+│   │   └── +page.svelte              # Landing Page
+│   ├── app.html                      # HTML Template
+│   └── app.css                       # Globale Styles
 ├── static/
-│   └── .nojekyll               # Wichtig für GitHub Pages
-├── svelte.config.js            # SvelteKit Konfiguration
-├── vite.config.js              # Vite Konfiguration
+│   └── .nojekyll                     # Wichtig für GitHub Pages
+├── svelte.config.js                  # SvelteKit Konfiguration
+├── vite.config.js                    # Vite Konfiguration
 └── package.json
 ```
 
