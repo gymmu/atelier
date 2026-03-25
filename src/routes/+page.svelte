@@ -9,7 +9,7 @@
 		</h1>
 		<p class="description">
 			Unterrichtsmanagement nach dem Atelier-Prinzip. Verwalten Sie Zeitpläne, steuern Sie
-			Phasen und behalten Sie individuelle Schüler-Timer im Blick.
+			Phasen und behalten Sie individuelle Schüler*innen-Timer im Blick.
 		</p>
 		<div class="actions">
 			<a href="{base}/admin" class="btn btn-primary">

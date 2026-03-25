@@ -17,7 +17,7 @@
 	let schedule = $derived(scheduleStore.currentSchedule);
 	let session = $derived(scheduleStore.activeSession);
 
-	let totalDuration = $derived(() => {
+	let totalDuration = $derived.by(() => {
 		if (!schedule) return 0;
 		return schedule.phases.reduce((sum, phase) => sum + phase.duration * 60 * 1000, 0);
 	});

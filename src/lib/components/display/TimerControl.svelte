@@ -48,7 +48,7 @@
 
 <div class="timer-control">
 	<div class="header">
-		<h3>Schüler-Timer</h3>
+		<h3>Schüler*innen-Timer</h3>
 		<div class="header-actions">
 			{#if timersStore.completedTimers.length > 0}
 				<button class="btn btn-sm" onclick={handleClearCompleted}>

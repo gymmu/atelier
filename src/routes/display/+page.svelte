@@ -6,9 +6,12 @@
 	import TimerControl from '$lib/components/display/TimerControl.svelte';
 	import NextPhase from '$lib/components/display/NextPhase.svelte';
 	import SessionControls from '$lib/components/display/SessionControls.svelte';
+	import ScheduleSelector from '$lib/components/display/ScheduleSelector.svelte';
+	import SessionOutline from '$lib/components/display/SessionOutline.svelte';
 
 	let currentTime = $state(new Date());
 	let timeInterval;
+	let scheduleSelectorOpen = $state(false);
 
 	onMount(() => {
 		// Update time every second
@@ -71,7 +74,16 @@
 	<header class="display-header">
 		<div class="schedule-info">
 			{#if currentSchedule}
-				<h1>{currentSchedule.name}</h1>
+				<div class="schedule-header">
+					<h1>{currentSchedule.name}</h1>
+					<button 
+						class="btn-change-schedule" 
+						onclick={() => (scheduleSelectorOpen = true)}
+						title="Zeitplan wechseln"
+					>
+						📋 Wechseln
+					</button>
+				</div>
 				{#if lessonStartTime && lessonEndTime}
 					<div class="lesson-time">
 						<span class="lesson-time-icon">🕐</span>
@@ -79,7 +91,16 @@
 					</div>
 				{/if}
 			{:else}
-				<h1>Atelier</h1>
+				<div class="schedule-header">
+					<h1>Atelier</h1>
+					<button 
+						class="btn-change-schedule" 
+						onclick={() => (scheduleSelectorOpen = true)}
+						title="Zeitplan auswählen"
+					>
+						📋 Zeitplan wählen
+					</button>
+				</div>
 			{/if}
 		</div>
 		<div class="time-info">
@@ -90,13 +111,14 @@
 
 	<main class="display-content">
 		<div class="main-section">
-			<SessionControls />
 			<CurrentPhase />
 			<ProgressBar />
 			<NextPhase />
 		</div>
 
 		<div class="side-section">
+			<SessionControls />
+			<SessionOutline />
 			<TimerControl />
 		</div>
 	</main>
@@ -107,6 +129,8 @@
 		</div>
 	</footer>
 </div>
+
+<ScheduleSelector bind:isOpen={scheduleSelectorOpen} />
 
 <style>
 	:global(body) {
@@ -138,11 +162,36 @@
 		gap: 0.5rem;
 	}
 
+	.schedule-header {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+	}
+
 	.schedule-info h1 {
 		margin: 0;
 		font-size: 2rem;
 		color: var(--color-text);
 		font-weight: 700;
+	}
+
+	.btn-change-schedule {
+		padding: 0.5rem 1rem;
+		background: rgba(255, 255, 255, 0.1);
+		border: 1px solid rgba(255, 255, 255, 0.2);
+		border-radius: 6px;
+		color: var(--color-text);
+		font-size: 0.875rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.2s;
+		white-space: nowrap;
+	}
+
+	.btn-change-schedule:hover {
+		background: rgba(255, 255, 255, 0.15);
+		border-color: var(--color-primary);
+		transform: translateY(-1px);
 	}
 
 	.lesson-time {
@@ -270,8 +319,18 @@
 			padding: 1rem;
 		}
 
+		.schedule-header {
+			flex-wrap: wrap;
+			width: 100%;
+		}
+
 		.schedule-info h1 {
 			font-size: 1.25rem;
+		}
+
+		.btn-change-schedule {
+			padding: 0.375rem 0.75rem;
+			font-size: 0.75rem;
 		}
 
 		.lesson-time {

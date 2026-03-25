@@ -86,12 +86,14 @@
 <style>
 	.session-controls {
 		display: flex;
+		flex-direction: column;
 		justify-content: center;
-		align-items: center;
+		align-items: stretch;
 		gap: 0.75rem;
-		padding: 1rem;
-		background: rgba(0, 0, 0, 0.2);
-		border-radius: 8px;
+		padding: 1.5rem;
+		background: var(--color-bg-darker);
+		border-radius: 12px;
+		border: 1px solid rgba(255, 255, 255, 0.1);
 	}
 
 	.no-schedule {
@@ -106,32 +108,35 @@
 	}
 
 	.completed-message {
-		padding: 0.75rem 1.5rem;
+		padding: 1rem;
 		background: rgba(76, 175, 80, 0.2);
 		border: 2px solid #4caf50;
 		border-radius: 6px;
 		font-weight: 600;
 		color: #4caf50;
 		font-size: 1rem;
+		text-align: center;
 	}
 
 	.control-buttons {
-		display: flex;
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
 		gap: 0.5rem;
 	}
 
 	.btn {
-		padding: 0.75rem 1.5rem;
+		padding: 0.875rem 1rem;
 		border: none;
 		border-radius: 6px;
-		font-size: 1.25rem;
+		font-size: 1.125rem;
 		font-weight: 600;
 		cursor: pointer;
 		transition: all 0.2s;
-		display: inline-flex;
+		display: flex;
 		align-items: center;
 		justify-content: center;
-		min-width: 3rem;
+		min-height: 3rem;
+		width: 100%;
 	}
 
 	.btn:disabled {
@@ -145,9 +150,10 @@
 	}
 
 	.btn-large {
-		font-size: 1.5rem;
-		padding: 1rem 2rem;
-		min-width: 250px;
+		font-size: 1.25rem;
+		padding: 1.25rem 1.5rem;
+		width: 100%;
+		min-height: 3.5rem;
 	}
 
 	.btn-primary {
@@ -199,23 +205,23 @@
 
 	@media (max-width: 768px) {
 		.session-controls {
-			padding: 0.75rem;
+			padding: 1rem;
 		}
 
 		.btn {
-			padding: 0.625rem 1rem;
+			padding: 0.75rem 0.75rem;
 			font-size: 1rem;
-			min-width: 2.5rem;
+			min-height: 2.5rem;
 		}
 
 		.btn-large {
-			font-size: 1.25rem;
-			padding: 0.875rem 1.5rem;
-			min-width: 200px;
+			font-size: 1.125rem;
+			padding: 1rem;
+			min-height: 3rem;
 		}
 
 		.control-buttons {
-			gap: 0.375rem;
+			gap: 0.5rem;
 		}
 	}
 </style>

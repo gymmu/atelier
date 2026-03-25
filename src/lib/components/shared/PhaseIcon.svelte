@@ -13,6 +13,7 @@
 
 <div
 	class="phase-icon"
+	class:tiny={size === 'tiny'}
 	class:small={size === 'small'}
 	class:large={size === 'large'}
 	style="--phase-color: {phaseInfo.color}"
@@ -32,6 +33,11 @@
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 	}
 
+	.phase-icon.tiny {
+		width: 1.5rem;
+		height: 1.5rem;
+	}
+
 	.phase-icon.small {
 		width: 2rem;
 		height: 2rem;
@@ -44,6 +50,10 @@
 
 	.icon {
 		font-size: 1.5rem;
+	}
+
+	.phase-icon.tiny .icon {
+		font-size: 0.75rem;
 	}
 
 	.phase-icon.small .icon {

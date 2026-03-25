@@ -15,7 +15,7 @@
 </script>
 
 <div class="student-timers">
-	<h3>Aktive Schüler-Timer</h3>
+	<h3>Aktive Schüler*innen-Timer</h3>
 	
 	{#if activeTimers.length === 0}
 		<div class="empty-state">

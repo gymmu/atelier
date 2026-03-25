@@ -180,20 +180,22 @@
 									<div class="phase-description">{phase.description}</div>
 								{/if}
 							</div>
-							<button
-								class="btn-icon"
-								onclick={() => handleEditPhase(phase.id)}
-								title="Phase bearbeiten"
-							>
-								✏️
-							</button>
-							<button
-								class="btn-icon btn-delete"
-								onclick={() => handleDeletePhase(phase.id)}
-								title="Phase löschen"
-							>
-								🗑️
-							</button>
+							<div class="phase-actions">
+								<button
+									class="btn-icon btn-edit"
+									onclick={() => handleEditPhase(phase.id)}
+									title="Phase bearbeiten"
+								>
+									✏️
+								</button>
+								<button
+									class="btn-icon btn-delete"
+									onclick={() => handleDeletePhase(phase.id)}
+									title="Phase löschen"
+								>
+									🗑️
+								</button>
+							</div>
 						</div>
 					{/if}
 				{/each}
@@ -423,18 +425,45 @@
 		font-style: italic;
 	}
 
+	.phase-actions {
+		display: flex;
+		gap: 0.25rem;
+	}
+
 	.btn-icon {
-		padding: 0.25rem 0.5rem;
-		background: transparent;
-		border: none;
+		padding: 0.375rem 0.625rem;
+		background: rgba(255, 255, 255, 0.05);
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		border-radius: 4px;
 		cursor: pointer;
 		font-size: 1.25rem;
-		opacity: 0.5;
-		transition: opacity 0.2s;
+		opacity: 0.8;
+		transition: all 0.2s;
 	}
 
 	.btn-icon:hover {
 		opacity: 1;
+		transform: translateY(-1px);
+	}
+
+	.btn-edit {
+		background: rgba(0, 123, 192, 0.15);
+		border-color: rgba(0, 123, 192, 0.3);
+	}
+
+	.btn-edit:hover {
+		background: rgba(0, 123, 192, 0.25);
+		border-color: var(--color-primary);
+	}
+
+	.btn-delete {
+		background: rgba(244, 67, 54, 0.15);
+		border-color: rgba(244, 67, 54, 0.3);
+	}
+
+	.btn-delete:hover {
+		background: rgba(244, 67, 54, 0.25);
+		border-color: #f44336;
 	}
 
 	.phase-edit-form {
