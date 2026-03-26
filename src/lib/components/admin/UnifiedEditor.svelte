@@ -1,6 +1,6 @@
 <script>
 	import MonacoEditor from '$lib/components/shared/MonacoEditor.svelte';
-	import { planToMarkdown, markdownToPlan, validatePlan } from '$lib/utils/markdown-converter.js';
+	import { planToMarkdown, planToMarkdownParts, markdownToPlan, validatePlan } from '$lib/utils/markdown-converter.js';
 	import { plansAPI } from '$lib/api/plans.js';
 	import { scheduleStore } from '$lib/stores/schedule.svelte.js';
 
@@ -59,7 +59,9 @@
 			let planToSave;
 
 			if (planEditMode === 'ui') {
-				planToSave = { ...uiPlan, updatedAt: Date.now() };
+				// Deep clone to remove Svelte proxies and ensure IPC compatibility
+				planToSave = JSON.parse(JSON.stringify(uiPlan));
+				planToSave.updatedAt = Date.now();
 			} else if (planEditMode === 'json') {
 				try {
 					planToSave = JSON.parse(jsonContent);
@@ -87,10 +89,8 @@
 
 			await plansAPI.save(planToSave);
 
-			const markdown = planToMarkdown(planToSave);
-			const matter = await import('gray-matter').then((m) => m.default);
-			const { content, data } = matter(markdown);
-			await plansAPI.saveMarkdown(planToSave.id, content, data);
+			const { content, frontmatter } = planToMarkdownParts(planToSave);
+			await plansAPI.saveMarkdown(planToSave.id, content, frontmatter);
 
 			await scheduleStore.loadSchedules();
 

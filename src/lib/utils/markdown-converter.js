@@ -1,4 +1,65 @@
-import matter from 'gray-matter';
+/**
+ * Erstellt Frontmatter und Content für einen Plan (ohne gray-matter)
+ * @param {Object} plan - Plan-Objekt
+ * @returns {{content: string, frontmatter: Object}}
+ */
+export function planToMarkdownParts(plan) {
+	const { id, name, classId, phases, startTime, createdAt, updatedAt } = plan;
+
+	// Frontmatter
+	const frontmatter = {
+		id,
+		name,
+		classId: classId || null,
+		startTime: startTime || '08:00',
+		createdAt,
+		updatedAt
+	};
+
+	// Markdown Content
+	let content = `# ${name}\n\n`;
+
+	if (classId) {
+		content += `**Klasse:** ${classId}\n`;
+	}
+	if (startTime) {
+		content += `**Startzeit:** ${startTime}\n`;
+	}
+	content += '\n---\n\n';
+
+	// Phasen
+	if (phases && phases.length > 0) {
+		content += '## Unterrichtsphasen\n\n';
+
+		phases.forEach((phase, index) => {
+			const durationMin = Math.floor(phase.duration / 60);
+			const durationSec = phase.duration % 60;
+			const durationStr =
+				durationSec > 0 ? `${durationMin}:${durationSec.toString().padStart(2, '0')}` : `${durationMin}`;
+
+			content += `### ${index + 1}. ${phase.name} (${durationStr} Min)\n\n`;
+
+			if (phase.type) {
+				content += `- **Typ:** ${phase.type}\n`;
+			}
+			if (phase.icon) {
+				content += `- **Icon:** ${phase.icon}\n`;
+			}
+			if (phase.color) {
+				content += `- **Farbe:** ${phase.color}\n`;
+			}
+			if (phase.description) {
+				content += `\n${phase.description}\n`;
+			}
+
+			content += '\n';
+		});
+	} else {
+		content += '_Keine Phasen definiert._\n';
+	}
+
+	return { content, frontmatter };
+}
 
 /**
  * Konvertiert einen Plan (JSON) in Markdown-Format mit Frontmatter
@@ -60,7 +121,20 @@ export function planToMarkdown(plan) {
 		content += '_Keine Phasen definiert._\n';
 	}
 
-	return matter.stringify(content, frontmatter);
+	// Manually create YAML frontmatter (avoid gray-matter in browser)
+	let yaml = '---\n';
+	for (const [key, value] of Object.entries(frontmatter)) {
+		if (value === null) {
+			yaml += `${key}: null\n`;
+		} else if (typeof value === 'string') {
+			yaml += `${key}: ${value}\n`;
+		} else {
+			yaml += `${key}: ${value}\n`;
+		}
+	}
+	yaml += '---\n\n';
+	
+	return yaml + content;
 }
 
 /**
@@ -69,7 +143,34 @@ export function planToMarkdown(plan) {
  * @returns {Object} Plan-Objekt
  */
 export function markdownToPlan(markdown) {
-	const { content, data } = matter(markdown);
+	// Manually parse YAML frontmatter (avoid gray-matter in browser)
+	let content = markdown;
+	let data = {};
+	
+	const frontmatterMatch = markdown.match(/^---\n([\s\S]*?)\n---\n\n?([\s\S]*)$/);
+	if (frontmatterMatch) {
+		const yamlContent = frontmatterMatch[1];
+		content = frontmatterMatch[2];
+		
+		// Simple YAML parser for our use case
+		const lines = yamlContent.split('\n');
+		for (const line of lines) {
+			const match = line.match(/^(\w+):\s*(.*)$/);
+			if (match) {
+				const key = match[1];
+				let value = match[2].trim();
+				
+				// Parse value
+				if (value === 'null') {
+					data[key] = null;
+				} else if (!isNaN(value) && value !== '') {
+					data[key] = Number(value);
+				} else {
+					data[key] = value;
+				}
+			}
+		}
+	}
 
 	// Parse phases from markdown content
 	const phases = parseMarkdownPhases(content);
