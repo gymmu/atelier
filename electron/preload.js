@@ -36,6 +36,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
 	openDisplayWindow: () => ipcRenderer.invoke('window:open-display'),
 	closeDisplayWindow: () => ipcRenderer.invoke('window:close-display'),
 
+	// Settings
+	getSetting: (key) => ipcRenderer.invoke('settings:get', key),
+	getSettings: () => ipcRenderer.invoke('settings:get'),
+	setSetting: (key, value) => ipcRenderer.invoke('settings:set', key, value),
+	getWorkingDirectory: () => ipcRenderer.invoke('settings:getWorkingDirectory'),
+	getSettingsLocation: () => ipcRenderer.invoke('settings:getSettingsLocation'),
+	chooseWorkingDirectory: () => ipcRenderer.invoke('settings:chooseWorkingDirectory'),
+
 	// Listeners for Window-to-Window Communication
 	onSessionUpdate: (callback) => ipcRenderer.on('session:update', (event, data) => callback(data)),
 	onTimersUpdate: (callback) => ipcRenderer.on('timers:update', (event, data) => callback(data))

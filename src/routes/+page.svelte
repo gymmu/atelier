@@ -15,6 +15,9 @@
 			<a href="{base}/admin" class="btn btn-primary">
 				⚙️ Zur Administration
 			</a>
+			<a href="{base}/settings" class="btn btn-secondary">
+				📁 Einstellungen
+			</a>
 			<a href="{base}/display" target="_blank" class="btn btn-secondary">
 				🖥️ Beamer-Ansicht
 			</a>

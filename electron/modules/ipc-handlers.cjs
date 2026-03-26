@@ -1,6 +1,6 @@
-const { ipcMain } = require('electron');
+const { ipcMain, dialog } = require('electron');
 
-function registerHandlers(fileManager, windowManager) {
+function registerHandlers(fileManager, windowManager, settingsManager) {
 	// Classes
 	ipcMain.handle('classes:list', async () => {
 		return await fileManager.readJSON('classes/classes.json', []);
@@ -123,6 +123,50 @@ function registerHandlers(fileManager, windowManager) {
 	ipcMain.handle('window:close-display', async () => {
 		windowManager.closeDisplayWindow();
 		return true;
+	});
+
+	// Settings
+	ipcMain.handle('settings:get', async (event, key) => {
+		if (key) {
+			return settingsManager.get(key);
+		}
+		return settingsManager.settings;
+	});
+
+	ipcMain.handle('settings:set', async (event, key, value) => {
+		await settingsManager.set(key, value);
+		return true;
+	});
+
+	ipcMain.handle('settings:getWorkingDirectory', async () => {
+		return settingsManager.getWorkingDirectory();
+	});
+
+	ipcMain.handle('settings:getSettingsLocation', async () => {
+		return settingsManager.getSettingsLocation();
+	});
+
+	ipcMain.handle('settings:chooseWorkingDirectory', async () => {
+		const result = await dialog.showOpenDialog({
+			title: 'Wähle ein Arbeitsverzeichnis',
+			properties: ['openDirectory', 'createDirectory'],
+			buttonLabel: 'Auswählen',
+			defaultPath: settingsManager.getWorkingDirectory()
+		});
+
+		if (!result.canceled && result.filePaths.length > 0) {
+			const newPath = result.filePaths[0];
+			await settingsManager.setWorkingDirectory(newPath);
+
+			// Update file manager base path (including .atelier subdirectory)
+			const path = require('path');
+			fileManager.basePath = path.join(newPath, '.atelier');
+			await fileManager.ensureDirectories();
+
+			return newPath;
+		}
+
+		return null;
 	});
 }
 

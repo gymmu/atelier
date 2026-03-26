@@ -77,6 +77,9 @@
 				<button onclick={openDisplayWindow} class="btn btn-display">
 					🖥️ Beamer-Ansicht öffnen
 				</button>
+				<a href="{base}/settings" class="btn btn-secondary">
+					⚙️ Einstellungen
+				</a>
 				<a href="{base}/" class="btn btn-secondary">
 					← Zurück
 				</a>

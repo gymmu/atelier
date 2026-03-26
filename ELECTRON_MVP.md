@@ -61,12 +61,21 @@ atelier/
 └── README.md                           # ✅ Vollständig aktualisiert
 ```
 
-## User Data Speicherort
+## Daten-Speicherort
 
-**Linux**: `~/.config/atelier/`
+### Konfiguration
+**Linux**: `~/.config/atelier/settings.json`
+
+Enthält:
+- `workingDirectory`: Pfad zum Arbeitsverzeichnis
+- `theme`: Theme-Einstellung
+- `lastOpened`: Letzte Nutzung
+
+### Arbeitsverzeichnis (Wählbar)
+Beim ersten Start oder über Einstellungen wählbar:
 
 ```
-~/.config/atelier/
+<dein-arbeitsverzeichnis>/
 ├── classes/
 │   └── classes.json              # Liste aller Klassen
 ├── sessions/
@@ -74,6 +83,12 @@ atelier/
 └── timers/
     └── student-timers.json       # Schüler-Timer
 ```
+
+**Vorteile:**
+- Frei wählbar (z.B. Cloud-Ordner für Sync)
+- Git-tauglich
+- Einfaches Backup
+- Mehrere Projekte möglich
 
 ## Wie starten
 
@@ -101,12 +116,15 @@ Erstellt:
 
 ### ✅ Was funktioniert
 - Electron App startet mit SvelteKit Frontend
+- **Working Directory Auswahl** beim ersten Start
+- **Settings-Seite** zum Ändern des Arbeitsverzeichnisses
 - Zeitpläne erstellen, bearbeiten, löschen
 - Sessions starten/pausieren/stoppen
 - Schüler-Timer hinzufügen/verwalten
 - Beamer-Ansicht in separatem Fenster öffnen
 - Multi-Window Synchronisation (Session/Timer Updates)
 - File-basierte Speicherung (JSON)
+- Trennung: Config in `~/.config/atelier/`, Daten in Arbeitsverzeichnis
 - DevTools in Development Mode
 - Build & Package für Linux
 
@@ -154,6 +172,13 @@ Alle verfügbar via `window.electronAPI`:
 - `getTimers()` - Alle Timer
 - `saveTimers(data)` - Timer speichern
 
+**Settings:**
+- `getSetting(key)` - Einzelne Einstellung
+- `getSettings()` - Alle Einstellungen
+- `setSetting(key, value)` - Einstellung setzen
+- `getWorkingDirectory()` - Arbeitsverzeichnis abrufen
+- `chooseWorkingDirectory()` - Verzeichnis-Auswahl-Dialog
+
 **Multi-Window:**
 - `openDisplayWindow()` - Beamer-Ansicht öffnen
 - `closeDisplayWindow()` - Beamer-Ansicht schließen
@@ -165,13 +190,19 @@ Alle verfügbar via `window.electronAPI`:
 ## Testing Checklist
 
 - [ ] `npm run dev` startet Electron + Vite
+- [ ] Beim ersten Start erscheint Working Directory Dialog
+- [ ] Arbeitsverzeichnis kann gewählt werden
+- [ ] Settings-Seite zeigt aktuelles Arbeitsverzeichnis
+- [ ] Arbeitsverzeichnis kann geändert werden
 - [ ] Zeitplan erstellen funktioniert
 - [ ] Session starten funktioniert
 - [ ] Timer hinzufügen funktioniert
 - [ ] Beamer-Ansicht öffnet in separatem Fenster
 - [ ] Änderungen in Admin-Fenster werden in Display-Fenster synchronisiert
-- [ ] Daten werden in `~/.config/atelier/` gespeichert
+- [ ] Daten werden im gewählten Arbeitsverzeichnis gespeichert
+- [ ] Config-Datei liegt in `~/.config/atelier/settings.json`
 - [ ] Nach Neustart sind Daten noch da
+- [ ] Nach Wechsel des Arbeitsverzeichnisses sind alte Daten nicht mehr sichtbar
 - [ ] `npm run build` läuft erfolgreich durch
 - [ ] `npm run package:linux` erstellt .AppImage und .deb
 

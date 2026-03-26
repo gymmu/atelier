@@ -23,23 +23,36 @@ Ein natives Desktop-Unterrichtsmanagement-System nach dem Atelier-Prinzip, gebau
 
 ## Daten-Speicherort
 
-Alle Daten werden im Electron userData-Verzeichnis gespeichert:
+Atelier nutzt eine **Settings-Hierarchie** und versteckte Daten:
 
-- **Linux**: `~/.config/atelier/`
-- **Windows**: `%APPDATA%/atelier/`
-- **macOS**: `~/Library/Application Support/atelier/`
+### Settings-Hierarchie (Priorität)
+1. **Lokale Settings** (höchste Priorität): `<arbeitsverzeichnis>/.atelier/settings.json`
+2. **Globale Settings** (Fallback): `~/.config/atelier/settings.json` (Linux)
 
-### Dateistruktur
+Die lokalen Settings im Projekt haben immer Vorrang!
+
+### Arbeitsverzeichnis (Deine Daten)
+Beim ersten Start wählst du ein Arbeitsverzeichnis. Alle Daten werden versteckt im `.atelier/` Unterordner gespeichert:
 
 ```
-~/.config/atelier/
-├── classes/
-│   └── classes.json          # Liste aller Klassen
-├── sessions/
-│   └── active-session.json   # Aktive Session
-└── timers/
-    └── student-timers.json   # Schüler-Timer
+<dein-arbeitsverzeichnis>/
+└── .atelier/                  # Versteckter Ordner für alle Daten
+    ├── settings.json          # Lokale Settings (Vorrang!)
+    ├── classes/
+    │   └── classes.json       # Liste aller Klassen
+    ├── sessions/
+    │   └── active-session.json # Aktive Session
+    └── timers/
+        └── student-timers.json # Schüler-Timer
 ```
+
+### Vorteile
+- ✅ **Hierarchie**: Projekt-spezifische Settings überschreiben globale
+- ✅ **Versteckt**: `.atelier/` Ordner stört nicht im Hauptverzeichnis
+- ✅ **Cloud-Sync**: Ganzes Verzeichnis in Nextcloud/Dropbox
+- ✅ **Git-tauglich**: `.atelier/` kann versioniert werden
+- ✅ **Portable**: Verzeichnis kopieren = Projekt kopieren
+- ✅ **Multi-Projekt**: Verschiedene Ordner für verschiedene Schuljahre
 
 ## Entwicklung
 
@@ -217,20 +230,31 @@ atelier/
    ```
    Die Electron-App öffnet sich automatisch.
 
-3. **Ersten Zeitplan erstellen:**
+3. **Arbeitsverzeichnis wählen:**
+   - Beim ersten Start erscheint ein Dialog
+   - Wähle einen Ordner (z.B. `~/Dokumente/Atelier` oder einen Cloud-Ordner)
+   - Oder nutze das Standard-Verzeichnis
+
+4. **Ersten Zeitplan erstellen:**
    - Klicke auf "+ Neu" in der linken Sidebar
    - Gib einen Namen ein (z.B. "Mathe Lektion 1")
    - Füge Phasen hinzu (vordefiniert oder custom)
    - Speichere den Zeitplan
 
-4. **Session starten:**
+5. **Session starten:**
    - Klicke auf "Session starten"
    - Optional: Öffne "🖥️ Beamer-Ansicht" in separatem Fenster
    - Die Phase-Timer laufen automatisch
 
-5. **Daten finden:**
-   - Linux: `~/.config/atelier/`
-   - Alle Daten als JSON-Dateien
+6. **Arbeitsverzeichnis ändern:**
+   - Gehe zu "Einstellungen" (⚙️ Button oben rechts)
+   - Klicke auf "📁 Verzeichnis ändern"
+   - Wähle ein neues Verzeichnis
+   - Starte die App neu
+
+7. **Daten finden:**
+   - Dein gewähltes Arbeitsverzeichnis
+   - Einstellungen: `~/.config/atelier/settings.json` (Linux)
 
 ## Bekannte Einschränkungen (MVP)
 

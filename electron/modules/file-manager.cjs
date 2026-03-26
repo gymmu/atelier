@@ -5,12 +5,17 @@ const { stringify } = require('csv-stringify/sync');
 const matter = require('gray-matter');
 
 class FileManager {
-	constructor(userDataPath) {
-		this.basePath = userDataPath;
+	constructor(workingDirectory) {
+		// All data goes into .atelier/ subdirectory
+		this.basePath = path.join(workingDirectory, '.atelier');
 		this.ensureDirectories();
 	}
 
 	async ensureDirectories() {
+		// Ensure .atelier base directory exists
+		await fs.mkdir(this.basePath, { recursive: true });
+		
+		// Ensure data subdirectories exist
 		const dirs = ['classes', 'sessions', 'timers'];
 		for (const dir of dirs) {
 			await fs.mkdir(path.join(this.basePath, dir), { recursive: true });
