@@ -132,16 +132,25 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		justify-content: center;
-		min-height: 400px;
-		padding: 3rem;
+		justify-content: flex-start;
+		padding: 2rem;
 		background: linear-gradient(
 			135deg,
 			var(--color-bg-darker) 0%,
 			var(--color-bg-dark) 100%
 		);
-		border-radius: 16px;
+		border-radius: 12px;
 		border: 2px solid rgba(255, 255, 255, 0.1);
+		overflow-y: auto;
+		overflow-x: hidden;
+		height: 100%;
+		scrollbar-width: none; /* Firefox */
+		-ms-overflow-style: none; /* IE and Edge */
+	}
+
+	/* Scrollbar verstecken für Webkit-Browser (Chrome, Safari) */
+	.current-phase::-webkit-scrollbar {
+		display: none;
 	}
 
 	.idle-state,
@@ -173,12 +182,12 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 2rem;
+		gap: 1.25rem;
 		width: 100%;
 	}
 
 	.phase-name {
-		font-size: 3.5rem;
+		font-size: 2.5rem;
 		font-weight: 700;
 		margin: 0;
 		color: var(--color-text);
@@ -223,10 +232,10 @@
 	}
 
 	.timer-display {
-		padding: 2rem;
+		padding: 1.5rem;
 		background: rgba(0, 0, 0, 0.3);
 		border-radius: 12px;
-		min-width: 300px;
+		min-width: 250px;
 		display: flex;
 		justify-content: center;
 	}
@@ -235,7 +244,7 @@
 	.phase-tasks {
 		width: 100%;
 		max-width: 600px;
-		padding: 1.5rem;
+		padding: 1rem 1.25rem;
 		background: rgba(0, 0, 0, 0.2);
 		border-radius: 8px;
 		text-align: left;
@@ -243,16 +252,16 @@
 
 	.phase-description h3,
 	.phase-tasks h3 {
-		margin: 0 0 0.75rem 0;
-		font-size: 1.25rem;
+		margin: 0 0 0.625rem 0;
+		font-size: 1.125rem;
 		color: var(--color-primary);
 		font-weight: 600;
 	}
 
 	.phase-description p {
 		margin: 0;
-		font-size: 1.125rem;
-		line-height: 1.6;
+		font-size: 1rem;
+		line-height: 1.5;
 		color: var(--color-text);
 	}
 
@@ -263,8 +272,8 @@
 	}
 
 	.phase-tasks li {
-		font-size: 1.125rem;
-		line-height: 1.8;
+		font-size: 1rem;
+		line-height: 1.6;
 		color: var(--color-text);
 		position: relative;
 		padding-left: 0.5rem;
@@ -301,12 +310,15 @@
 
 	@media (max-width: 768px) {
 		.current-phase {
-			padding: 2rem;
-			min-height: 300px;
+			padding: 1.5rem;
 		}
 
 		.phase-name {
-			font-size: 2.5rem;
+			font-size: 2rem;
+		}
+
+		.active-phase {
+			gap: 1rem;
 		}
 
 		.time-info {

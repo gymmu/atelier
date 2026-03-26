@@ -4,7 +4,6 @@
 	import CurrentPhase from '$lib/components/display/CurrentPhase.svelte';
 	import ProgressBar from '$lib/components/display/ProgressBar.svelte';
 	import TimerControl from '$lib/components/display/TimerControl.svelte';
-	import NextPhase from '$lib/components/display/NextPhase.svelte';
 	import SessionControls from '$lib/components/display/SessionControls.svelte';
 	import ScheduleSelector from '$lib/components/display/ScheduleSelector.svelte';
 	import SessionOutline from '$lib/components/display/SessionOutline.svelte';
@@ -72,40 +71,34 @@
 
 <div class="display-page">
 	<header class="display-header">
-		<div class="schedule-info">
+		<div class="header-left">
 			{#if currentSchedule}
-				<div class="schedule-header">
-					<h1>{currentSchedule.name}</h1>
-					<button 
-						class="btn-change-schedule" 
-						onclick={() => (scheduleSelectorOpen = true)}
-						title="Zeitplan wechseln"
-					>
-						📋 Wechseln
-					</button>
-				</div>
-				{#if lessonStartTime && lessonEndTime}
-					<div class="lesson-time">
-						<span class="lesson-time-icon">🕐</span>
-						<span class="lesson-time-text">Lektion: {lessonStartTime} - {lessonEndTime}</span>
-					</div>
-				{/if}
+				<h1>{currentSchedule.name}</h1>
 			{:else}
-				<div class="schedule-header">
-					<h1>Atelier</h1>
-					<button 
-						class="btn-change-schedule" 
-						onclick={() => (scheduleSelectorOpen = true)}
-						title="Zeitplan auswählen"
-					>
-						📋 Zeitplan wählen
-					</button>
+				<h1>Atelier</h1>
+			{/if}
+		</div>
+		
+		<div class="header-center">
+			{#if lessonStartTime && lessonEndTime}
+				<div class="lesson-time">
+					🕐 {lessonStartTime} - {lessonEndTime}
 				</div>
 			{/if}
 		</div>
-		<div class="time-info">
-			<div class="time">{formattedTime}</div>
-			<div class="date">{formattedDate}</div>
+		
+		<div class="header-right">
+			<button 
+				class="btn-change-schedule" 
+				onclick={() => (scheduleSelectorOpen = true)}
+				title={currentSchedule ? "Zeitplan wechseln" : "Zeitplan auswählen"}
+			>
+				📋
+			</button>
+			<div class="time-info">
+				<div class="time">{formattedTime}</div>
+				<div class="date">{formattedDate}</div>
+			</div>
 		</div>
 	</header>
 
@@ -113,7 +106,6 @@
 		<div class="main-section">
 			<CurrentPhase />
 			<ProgressBar />
-			<NextPhase />
 		</div>
 
 		<div class="side-section">
@@ -122,12 +114,6 @@
 			<TimerControl />
 		</div>
 	</main>
-
-	<footer class="display-footer">
-		<div class="instructions">
-			💡 Tipp: Drücken Sie F11 für Vollbildmodus
-		</div>
-	</footer>
 </div>
 
 <ScheduleSelector bind:isOpen={scheduleSelectorOpen} />
@@ -138,54 +124,76 @@
 	}
 
 	.display-page {
-		min-height: 100vh;
+		height: 100vh;
 		background: var(--color-bg-darker);
 		display: flex;
 		flex-direction: column;
-		padding: 1.5rem;
-		gap: 1.5rem;
+		padding: 1rem;
+		gap: 1rem;
+		overflow: hidden;
 	}
 
 	.display-header {
-		display: flex;
-		justify-content: space-between;
+		display: grid;
+		grid-template-columns: 1fr auto 1fr;
 		align-items: center;
-		padding: 1.5rem 2rem;
+		gap: 1.5rem;
+		padding: 0.875rem 1.5rem;
 		background: var(--color-bg-dark);
-		border-radius: 12px;
+		border-radius: 8px;
 		border: 1px solid rgba(255, 255, 255, 0.1);
+		flex-shrink: 0;
 	}
 
-	.schedule-info {
+	.header-left h1 {
+		margin: 0;
+		font-size: 1.5rem;
+		color: var(--color-text);
+		font-weight: 700;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.header-center {
 		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
+		justify-content: center;
 	}
 
-	.schedule-header {
+	.lesson-time {
+		padding: 0.5rem 1rem;
+		background: rgba(0, 123, 192, 0.15);
+		border-radius: 6px;
+		border: 1px solid rgba(0, 123, 192, 0.3);
+		font-size: 0.9375rem;
+		font-weight: 600;
+		color: var(--color-primary);
+		font-family: 'Courier New', monospace;
+		white-space: nowrap;
+	}
+
+	.header-right {
 		display: flex;
 		align-items: center;
+		justify-content: flex-end;
 		gap: 1rem;
 	}
 
-	.schedule-info h1 {
-		margin: 0;
-		font-size: 2rem;
-		color: var(--color-text);
-		font-weight: 700;
-	}
-
 	.btn-change-schedule {
-		padding: 0.5rem 1rem;
+		padding: 0.5rem;
+		width: 2.5rem;
+		height: 2.5rem;
 		background: rgba(255, 255, 255, 0.1);
 		border: 1px solid rgba(255, 255, 255, 0.2);
 		border-radius: 6px;
 		color: var(--color-text);
-		font-size: 0.875rem;
-		font-weight: 600;
+		font-size: 1.25rem;
 		cursor: pointer;
 		transition: all 0.2s;
-		white-space: nowrap;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
 	}
 
 	.btn-change-schedule:hover {
@@ -194,44 +202,26 @@
 		transform: translateY(-1px);
 	}
 
-	.lesson-time {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		padding: 0.5rem 1rem;
-		background: rgba(0, 123, 192, 0.15);
-		border-radius: 6px;
-		border: 1px solid rgba(0, 123, 192, 0.3);
-	}
-
-	.lesson-time-icon {
-		font-size: 1.25rem;
-	}
-
-	.lesson-time-text {
-		font-size: 1rem;
-		font-weight: 600;
-		color: var(--color-primary);
-		font-family: 'Courier New', monospace;
-	}
-
 	.time-info {
-		text-align: right;
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 0.125rem;
 	}
 
 	.time {
-		font-size: 2.5rem;
+		font-size: 1.75rem;
 		font-weight: 700;
 		font-family: 'Courier New', monospace;
 		color: var(--color-primary);
 		line-height: 1;
-		margin-bottom: 0.25rem;
 	}
 
 	.date {
-		font-size: 0.875rem;
+		font-size: 0.75rem;
 		color: var(--color-text-secondary);
 		text-transform: capitalize;
+		white-space: nowrap;
 	}
 
 	.display-content {
@@ -246,6 +236,15 @@
 		display: flex;
 		flex-direction: column;
 		gap: 1.5rem;
+		overflow-y: auto;
+		overflow-x: hidden;
+		scrollbar-width: none; /* Firefox */
+		-ms-overflow-style: none; /* IE and Edge */
+	}
+
+	/* Scrollbar verstecken für Webkit-Browser (Chrome, Safari) */
+	.main-section::-webkit-scrollbar {
+		display: none;
 	}
 
 	.side-section {
@@ -253,18 +252,14 @@
 		flex-direction: column;
 		gap: 1.5rem;
 		overflow-y: auto;
+		overflow-x: hidden;
+		scrollbar-width: none; /* Firefox */
+		-ms-overflow-style: none; /* IE and Edge */
 	}
 
-	.display-footer {
-		padding: 1rem;
-		background: rgba(255, 255, 255, 0.03);
-		border-radius: 8px;
-		text-align: center;
-	}
-
-	.instructions {
-		color: var(--color-text-secondary);
-		font-size: 0.875rem;
+	/* Scrollbar verstecken für Webkit-Browser (Chrome, Safari) */
+	.side-section::-webkit-scrollbar {
+		display: none;
 	}
 
 	/* Responsive Design */
@@ -313,24 +308,40 @@
 		}
 
 		.display-header {
-			flex-direction: column;
-			align-items: flex-start;
-			gap: 1rem;
-			padding: 1rem;
+			grid-template-columns: 1fr;
+			gap: 0.75rem;
+			padding: 0.75rem;
 		}
 
-		.schedule-header {
-			flex-wrap: wrap;
-			width: 100%;
-		}
-
-		.schedule-info h1 {
+		.header-left h1 {
 			font-size: 1.25rem;
 		}
 
-		.btn-change-schedule {
+		.header-center {
+			justify-content: flex-start;
+		}
+
+		.lesson-time {
+			font-size: 0.875rem;
 			padding: 0.375rem 0.75rem;
-			font-size: 0.75rem;
+		}
+
+		.header-right {
+			justify-content: space-between;
+		}
+
+		.time {
+			font-size: 1.5rem;
+		}
+
+		.date {
+			font-size: 0.6875rem;
+		}
+
+		.btn-change-schedule {
+			width: 2.25rem;
+			height: 2.25rem;
+			font-size: 1.125rem;
 		}
 
 		.lesson-time {

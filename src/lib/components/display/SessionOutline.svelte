@@ -1,6 +1,5 @@
 <script>
 	import { scheduleStore } from '$lib/stores/schedule.svelte.js';
-	import PhaseIcon from '../shared/PhaseIcon.svelte';
 
 	let schedule = $derived(scheduleStore.currentSchedule);
 	let session = $derived(scheduleStore.activeSession);
@@ -47,26 +46,18 @@
 					class:active={index === currentPhaseIndex}
 					class:completed={index < currentPhaseIndex}
 					class:upcoming={index > currentPhaseIndex}
+					style="--phase-color: {phase.color}"
 				>
-					<div class="phase-indicator">
-						{#if index < currentPhaseIndex}
-							<span class="status-icon completed">✓</span>
-						{:else if index === currentPhaseIndex}
-							<span class="status-icon active">▶</span>
-						{:else}
-							<span class="status-icon upcoming">{index + 1}</span>
-						{/if}
-					</div>
+					<div class="phase-color-bar"></div>
 					
 					<div class="phase-content">
 						<div class="phase-header">
-							<PhaseIcon phaseName={phase.name} size="tiny" />
 							<span class="phase-name">{phase.name}</span>
+							<span class="duration">{phase.duration} Min.</span>
 						</div>
 						
 						<div class="phase-meta">
 							<span class="time">{phase.startTime} - {phase.endTime}</span>
-							<span class="duration">{phase.duration} Min.</span>
 						</div>
 					</div>
 				</div>
@@ -112,119 +103,101 @@
 
 	.phase-item {
 		display: flex;
-		gap: 0.75rem;
-		padding: 0.75rem;
+		gap: 0;
+		padding: 0;
 		background: rgba(255, 255, 255, 0.03);
-		border-radius: 8px;
-		border: 2px solid rgba(255, 255, 255, 0.05);
+		border-radius: 6px;
+		border: 1px solid rgba(255, 255, 255, 0.05);
 		transition: all 0.2s;
+		overflow: hidden;
+		position: relative;
 	}
 
 	.phase-item.completed {
-		opacity: 0.6;
-		background: rgba(76, 175, 80, 0.1);
-		border-color: rgba(76, 175, 80, 0.2);
+		opacity: 0.5;
 	}
 
 	.phase-item.active {
-		background: rgba(0, 123, 192, 0.15);
+		background: rgba(0, 123, 192, 0.1);
 		border-color: var(--color-primary);
-		box-shadow: 0 0 0 2px rgba(0, 123, 192, 0.2);
 	}
 
 	.phase-item.upcoming {
-		opacity: 0.7;
+		opacity: 0.8;
 	}
 
-	.phase-indicator {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		min-width: 2rem;
-		height: 2rem;
+	.phase-color-bar {
+		width: 4px;
+		background: var(--phase-color);
+		flex-shrink: 0;
 	}
 
-	.status-icon {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 2rem;
-		height: 2rem;
-		border-radius: 50%;
-		font-weight: 700;
-		font-size: 0.875rem;
+	.phase-item.active .phase-color-bar {
+		animation: pulse-glow 2s infinite;
 	}
 
-	.status-icon.completed {
-		background: rgba(76, 175, 80, 0.2);
-		color: #4caf50;
-		border: 2px solid #4caf50;
-	}
-
-	.status-icon.active {
-		background: rgba(0, 123, 192, 0.2);
-		color: var(--color-primary);
-		border: 2px solid var(--color-primary);
-		animation: pulse-border 2s infinite;
-	}
-
-	@keyframes pulse-border {
+	@keyframes pulse-glow {
 		0%, 100% {
-			box-shadow: 0 0 0 0 rgba(0, 123, 192, 0.4);
+			opacity: 1;
+			box-shadow: 0 0 8px var(--phase-color);
 		}
 		50% {
-			box-shadow: 0 0 0 4px rgba(0, 123, 192, 0);
+			opacity: 0.7;
+			box-shadow: 0 0 16px var(--phase-color);
 		}
-	}
-
-	.status-icon.upcoming {
-		background: rgba(255, 255, 255, 0.05);
-		color: var(--color-text-secondary);
-		border: 2px solid rgba(255, 255, 255, 0.2);
 	}
 
 	.phase-content {
 		flex: 1;
 		display: flex;
 		flex-direction: column;
-		gap: 0.375rem;
+		gap: 0.25rem;
 		min-width: 0;
+		padding: 0.625rem 0.75rem;
 	}
 
 	.phase-header {
 		display: flex;
 		align-items: center;
+		justify-content: space-between;
 		gap: 0.5rem;
 	}
 
 	.phase-name {
 		font-weight: 600;
-		font-size: 0.9375rem;
+		font-size: 0.875rem;
 		color: var(--color-text);
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
+		flex: 1;
 	}
 
 	.phase-item.active .phase-name {
 		color: var(--color-primary);
 	}
 
+	.duration {
+		font-weight: 600;
+		font-size: 0.75rem;
+		color: var(--color-text-secondary);
+		white-space: nowrap;
+		flex-shrink: 0;
+	}
+
+	.phase-item.active .duration {
+		color: var(--color-primary);
+	}
+
 	.phase-meta {
 		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		font-size: 0.75rem;
+		font-size: 0.6875rem;
 		color: var(--color-text-secondary);
 	}
 
 	.time {
 		font-family: 'Courier New', monospace;
 		font-weight: 500;
-	}
-
-	.duration {
-		font-weight: 600;
 	}
 
 	.total-summary {
@@ -251,28 +224,8 @@
 		font-family: 'Courier New', monospace;
 	}
 
-	/* Scrollable wenn zu viele Phasen */
 	.phases-timeline {
-		max-height: 400px;
-		overflow-y: auto;
-	}
-
-	.phases-timeline::-webkit-scrollbar {
-		width: 6px;
-	}
-
-	.phases-timeline::-webkit-scrollbar-track {
-		background: rgba(255, 255, 255, 0.05);
-		border-radius: 3px;
-	}
-
-	.phases-timeline::-webkit-scrollbar-thumb {
-		background: rgba(255, 255, 255, 0.1);
-		border-radius: 3px;
-	}
-
-	.phases-timeline::-webkit-scrollbar-thumb:hover {
-		background: rgba(255, 255, 255, 0.15);
+		/* Keine max-height mehr, da die ganze Seitenleiste scrollt */
 	}
 
 	@media (max-width: 768px) {
@@ -284,26 +237,20 @@
 			font-size: 1rem;
 		}
 
-		.phase-item {
-			padding: 0.625rem;
-		}
-
-		.status-icon {
-			width: 1.75rem;
-			height: 1.75rem;
-			font-size: 0.75rem;
+		.phase-content {
+			padding: 0.5rem 0.625rem;
 		}
 
 		.phase-name {
-			font-size: 0.875rem;
+			font-size: 0.8125rem;
 		}
 
-		.phase-meta {
+		.duration {
 			font-size: 0.6875rem;
 		}
 
-		.phases-timeline {
-			max-height: 300px;
+		.phase-meta {
+			font-size: 0.625rem;
 		}
 	}
 </style>
