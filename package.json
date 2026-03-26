@@ -1,19 +1,34 @@
 {
 	"name": "atelier",
 	"private": true,
-	"version": "0.0.1",
+	"version": "1.0.0",
 	"type": "module",
+	"main": "electron/main.cjs",
 	"scripts": {
-		"dev": "vite dev",
+		"dev": "concurrently \"vite dev\" \"wait-on http://localhost:5173 && NODE_ENV=development electron .\"",
 		"build": "vite build",
 		"preview": "vite preview",
+		"package:linux": "npm run build && electron-builder --linux",
+		"package:all": "npm run build && electron-builder -wml",
 		"prepare": "svelte-kit sync || echo ''"
 	},
 	"devDependencies": {
+		"@revolist/svelte-datagrid": "^4.21.0",
 		"@sveltejs/adapter-static": "^3.0.10",
 		"@sveltejs/kit": "^2.50.2",
 		"@sveltejs/vite-plugin-svelte": "^6.2.4",
+		"concurrently": "^9.2.1",
+		"electron": "^41.0.4",
+		"electron-builder": "^26.8.1",
 		"svelte": "^5.54.0",
-		"vite": "^7.3.1"
+		"svelte-monaco": "^1.0.4",
+		"vite": "^7.3.1",
+		"wait-on": "^9.0.4"
+	},
+	"dependencies": {
+		"csv-parse": "^6.2.1",
+		"csv-stringify": "^6.7.0",
+		"gray-matter": "^4.0.3",
+		"marked": "^17.0.5"
 	}
 }

@@ -7,10 +7,11 @@ import { SESSION_STATUS } from '$lib/utils/constants.js';
  * Verwendet Svelte 5 Runes für Reaktivität
  */
 
-// State
-let schedules = $state(loadFromStorage(STORAGE_KEYS.SCHEDULES, []));
-let currentScheduleId = $state(loadFromStorage(STORAGE_KEYS.CURRENT_SCHEDULE_ID, null));
-let activeSession = $state(loadFromStorage(STORAGE_KEYS.ACTIVE_SESSION, null));
+// State - Initialize with empty/default values, load async
+let schedules = $state([]);
+let currentScheduleId = $state(null);
+let activeSession = $state(null);
+let initialized = $state(false);
 
 // Derived state
 let currentSchedule = $derived.by(() => {
@@ -59,6 +60,43 @@ export const scheduleStore = {
 	},
 	get sessionStatus() {
 		return sessionStatus;
+	},
+	get initialized() {
+		return initialized;
+	},
+
+	/**
+	 * Initialisiert den Store - lädt Daten async
+	 */
+	async init() {
+		if (initialized) return;
+		
+		try {
+			// Load from storage (async now)
+			const loadedSchedules = await loadFromStorage(STORAGE_KEYS.SCHEDULES, []);
+			const loadedScheduleId = await loadFromStorage(STORAGE_KEYS.CURRENT_SCHEDULE_ID, null);
+			const loadedSession = await loadFromStorage(STORAGE_KEYS.ACTIVE_SESSION, null);
+			
+			schedules = loadedSchedules;
+			currentScheduleId = loadedScheduleId;
+			activeSession = loadedSession;
+			initialized = true;
+			
+			// Setup listeners for cross-window updates if in Electron
+			if (typeof window !== 'undefined' && window.electronAPI) {
+				window.electronAPI.onSessionUpdate((data) => {
+					activeSession = data;
+				});
+			}
+			
+			// Restart timer if session is active
+			if (activeSession && !activeSession.isPaused) {
+				this.startTimer();
+			}
+		} catch (error) {
+			console.error('Error initializing schedule store:', error);
+			initialized = true; // Mark as initialized even on error
+		}
 	},
 
 	/**
@@ -318,9 +356,9 @@ export const scheduleStore = {
 	},
 
 	/**
-	 * Speichert aktive Session im localStorage
+	 * Speichert aktive Session im localStorage/File
 	 */
-	saveSession() {
-		saveToStorage(STORAGE_KEYS.ACTIVE_SESSION, activeSession);
+	async saveSession() {
+		await saveToStorage(STORAGE_KEYS.ACTIVE_SESSION, activeSession);
 	}
 };

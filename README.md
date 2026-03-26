@@ -1,6 +1,6 @@
-# Atelier
+# Atelier - Desktop Edition
 
-Ein Unterrichtsmanagement-System nach dem Atelier-Prinzip, gebaut mit SvelteKit, Vite und automatischem GitHub Pages Deployment.
+Ein natives Desktop-Unterrichtsmanagement-System nach dem Atelier-Prinzip, gebaut mit Electron, SvelteKit und dateibasierter Speicherung.
 
 ## Features
 
@@ -8,18 +8,38 @@ Ein Unterrichtsmanagement-System nach dem Atelier-Prinzip, gebaut mit SvelteKit,
 - **Zeitplan-Management** - Erstellen und verwalten Sie Zeitpläne für verschiedene Klassen und Lektionen
 - **Vordefinierte Phasen** - Nutzen Sie Standardphasen wie "Einstieg", "Instruktion", "Freie Arbeitsphase", "Präsentation", "Reflexion" und "Pause"
 - **Benutzerdefinierte Phasen** - Erstellen Sie eigene Phasen mit individuellen Namen, Icons und Farben
-- **Live-Anzeige** - Beamer-Ansicht zeigt den aktuellen Unterrichtsverlauf mit Countdown und Fortschrittsbalken
+- **Live-Anzeige** - Beamer-Ansicht in separatem Fenster zeigt den aktuellen Unterrichtsverlauf mit Countdown und Fortschrittsbalken
 - **Schüler-Timer** - Individuelle Timer für Schülerinnen und Schüler während freier Arbeitsphasen
 - **Session-Steuerung** - Starten, pausieren, stoppen und navigieren Sie durch die Unterrichtsphasen
+- **Multi-Window Support** - Admin und Beamer-Ansicht in separaten Fenstern mit Live-Sync
 
 ### Technologie
+- **Electron** - Native Desktop-Applikation für Linux (erweiterbar auf Windows/macOS)
 - **SvelteKit** - Modernes Web-Framework mit Svelte 5 und Runes
 - **Vite** - Schnelles Build-Tool und Dev-Server
-- **localStorage** - Alle Daten werden lokal im Browser gespeichert
+- **File-based Storage** - Alle Daten werden in JSON/CSV/Markdown-Dateien gespeichert
 - **Dunkles Theme** - Elegantes Design mit Hauptfarbe #007BC0
-- **Responsive Design** - Optimiert für Desktop, Tablet und Mobile
-- **GitHub Actions** - Automatisches Deployment auf GitHub Pages bei Push auf `main`
-- **Static Site Generation (SSG)** - Prerendered Pages für optimale Performance
+- **IPC Communication** - Sichere Kommunikation zwischen Main und Renderer Process
+
+## Daten-Speicherort
+
+Alle Daten werden im Electron userData-Verzeichnis gespeichert:
+
+- **Linux**: `~/.config/atelier/`
+- **Windows**: `%APPDATA%/atelier/`
+- **macOS**: `~/Library/Application Support/atelier/`
+
+### Dateistruktur
+
+```
+~/.config/atelier/
+├── classes/
+│   └── classes.json          # Liste aller Klassen
+├── sessions/
+│   └── active-session.json   # Aktive Session
+└── timers/
+    └── student-timers.json   # Schüler-Timer
+```
 
 ## Entwicklung
 
@@ -36,17 +56,17 @@ npm install
 
 ### Development Server starten
 
+**Wichtig**: Das `dev` Script startet sowohl Vite als auch Electron:
+
 ```bash
 npm run dev
 ```
 
-Die App ist dann unter `http://localhost:5173` verfügbar.
+Dies startet:
+1. Vite Dev Server auf `http://localhost:5173`
+2. Electron Desktop App (wartet auf Vite)
 
-Um den Dev-Server in einem neuen Browser-Tab zu öffnen:
-
-```bash
-npm run dev -- --open
-```
+Die Electron-App öffnet sich automatisch sobald Vite bereit ist.
 
 ### Production Build
 
@@ -56,28 +76,38 @@ npm run build
 
 Der Build wird im `build/` Verzeichnis erstellt.
 
-### Production Build lokal testen
+### Electron App packen
 
+**Für Linux:**
 ```bash
-npm run preview
+npm run package:linux
 ```
 
-## Deployment
+Erstellt:
+- `dist/Atelier-1.0.0.AppImage`
+- `dist/atelier_1.0.0_amd64.deb`
 
-Das Projekt ist konfiguriert für automatisches Deployment auf GitHub Pages:
+**Für alle Plattformen (Windows, macOS, Linux):**
+```bash
+npm run package:all
+```
 
-1. **Automatisches Deployment**: Bei jedem Push auf den `main` Branch wird automatisch ein Build erstellt und auf GitHub Pages deployed
-2. **GitHub Pages URL**: `https://gymmu.github.io/atelier/`
-3. **GitHub Actions Workflow**: `.github/workflows/deploy.yml`
+## Installation (für Endnutzer)
 
-### GitHub Repository Setup
+### Linux
 
-Um GitHub Pages zu aktivieren:
+**AppImage:**
+```bash
+chmod +x Atelier-1.0.0.AppImage
+./Atelier-1.0.0.AppImage
+```
 
-1. Gehe zu deinen Repository Settings
-2. Navigiere zu **Pages** im linken Menü
-3. Unter **Source** wähle **GitHub Actions**
-4. Der erste Push auf `main` triggert das Deployment
+**Debian/Ubuntu (.deb):**
+```bash
+sudo dpkg -i atelier_1.0.0_amd64.deb
+```
+
+Nach der Installation kann die App über das Anwendungsmenü gestartet werden.
 
 ## Verwendung
 
@@ -142,19 +172,30 @@ atelier/
 │   │   └── +page.svelte              # Landing Page
 │   ├── app.html                      # HTML Template
 │   └── app.css                       # Globale Styles
+├── electron/                         # Electron Main Process
+│   ├── main.js                      # Entry Point
+│   ├── preload.js                   # Context Bridge
+│   └── modules/
+│       ├── file-manager.js          # Datei I/O
+│       ├── window-manager.js        # Multi-Window
+│       └── ipc-handlers.js          # IPC Handlers
 ├── static/
-│   └── .nojekyll                     # Wichtig für GitHub Pages
 ├── svelte.config.js                  # SvelteKit Konfiguration
 ├── vite.config.js                    # Vite Konfiguration
+├── electron-builder.yml              # Electron Builder Config
 └── package.json
 ```
 
 ## Technologien
 
-- **SvelteKit** `^2.50.2` - Framework
+- **Electron** `^41.0.4` - Desktop App Framework
+- **SvelteKit** `^2.50.2` - Web Framework
 - **Svelte** `^5.54.0` - UI Library
 - **Vite** `^7.3.1` - Build Tool
-- **@sveltejs/adapter-static** `^3.0.10` - Static Site Adapter für GitHub Pages
+- **@sveltejs/adapter-static** `^3.0.10` - Static Site Adapter
+- **csv-parse/stringify** - CSV Handling
+- **marked** - Markdown Parser
+- **gray-matter** - Markdown Frontmatter
 
 ## Design
 
@@ -162,3 +203,58 @@ atelier/
 - **Hintergrund**: Dunkle Farbpalette (#0d1117, #010409)
 - **Text**: Helle Schrift (#e6edf3)
 - **Animationen**: Fade-in und Slide-in Effekte
+
+## Quick Start Guide
+
+1. **Installation:**
+   ```bash
+   npm install
+   ```
+
+2. **Development starten:**
+   ```bash
+   npm run dev
+   ```
+   Die Electron-App öffnet sich automatisch.
+
+3. **Ersten Zeitplan erstellen:**
+   - Klicke auf "+ Neu" in der linken Sidebar
+   - Gib einen Namen ein (z.B. "Mathe Lektion 1")
+   - Füge Phasen hinzu (vordefiniert oder custom)
+   - Speichere den Zeitplan
+
+4. **Session starten:**
+   - Klicke auf "Session starten"
+   - Optional: Öffne "🖥️ Beamer-Ansicht" in separatem Fenster
+   - Die Phase-Timer laufen automatisch
+
+5. **Daten finden:**
+   - Linux: `~/.config/atelier/`
+   - Alle Daten als JSON-Dateien
+
+## Bekannte Einschränkungen (MVP)
+
+- Klassenmanagement: Basis-Implementation (noch keine UI)
+- Markdown-Editor: Noch nicht implementiert
+- CSV-Editor: Noch nicht implementiert
+- Unsaved Changes Indicator: Noch nicht implementiert
+
+Diese Features sind geplant für zukünftige Versionen.
+
+## Troubleshooting
+
+**Electron startet nicht:**
+- Stelle sicher dass Vite läuft (`http://localhost:5173`)
+- Prüfe `NODE_ENV=development` in package.json dev script
+
+**Daten werden nicht gespeichert:**
+- Prüfe ob `~/.config/atelier/` existiert
+- Electron sollte automatisch das Verzeichnis erstellen
+
+**DevTools öffnen:**
+- Im Development Mode öffnet sich DevTools automatisch
+- Oder: View → Toggle Developer Tools
+
+## Lizenz
+
+MIT

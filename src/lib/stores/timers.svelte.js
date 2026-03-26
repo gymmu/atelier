@@ -6,8 +6,9 @@ import { generateId, getRemainingTime, playSound } from '$lib/utils/timer.js';
  * Verwendet Svelte 5 Runes für Reaktivität
  */
 
-// State
-let timers = $state(loadFromStorage(STORAGE_KEYS.STUDENT_TIMERS, []));
+// State - Initialize with empty, load async
+let timers = $state([]);
+let initialized = $state(false);
 
 // Timer Interval für Updates
 let timerInterval = null;
@@ -27,6 +28,36 @@ export const timersStore = {
 
 	get completedTimers() {
 		return timers.filter((t) => this.getRemainingTime(t.id) <= 0);
+	},
+
+	get initialized() {
+		return initialized;
+	},
+
+	/**
+	 * Initialisiert den Store - lädt Daten async
+	 */
+	async init() {
+		if (initialized) return;
+		
+		try {
+			const loadedTimers = await loadFromStorage(STORAGE_KEYS.STUDENT_TIMERS, []);
+			timers = loadedTimers;
+			initialized = true;
+			
+			// Setup listeners for cross-window updates if in Electron
+			if (typeof window !== 'undefined' && window.electronAPI) {
+				window.electronAPI.onTimersUpdate((data) => {
+					timers = data;
+				});
+			}
+			
+			// Start interval for timer updates
+			this.startInterval();
+		} catch (error) {
+			console.error('Error initializing timers store:', error);
+			initialized = true;
+		}
 	},
 
 	/**
@@ -172,9 +203,9 @@ export const timersStore = {
 	},
 
 	/**
-	 * Speichert Timer im localStorage
+	 * Speichert Timer im localStorage/File
 	 */
-	saveTimers() {
-		saveToStorage(STORAGE_KEYS.STUDENT_TIMERS, timers);
+	async saveTimers() {
+		await saveToStorage(STORAGE_KEYS.STUDENT_TIMERS, timers);
 	}
 };

@@ -1,5 +1,6 @@
 <script>
 	import { scheduleStore } from '$lib/stores/schedule.svelte.js';
+	import { timersStore } from '$lib/stores/timers.svelte.js';
 	import { base } from '$app/paths';
 	import { onMount } from 'svelte';
 	import ClassSelector from '$lib/components/admin/ClassSelector.svelte';
@@ -9,6 +10,12 @@
 	let currentSchedule = $derived(scheduleStore.currentSchedule);
 	let activeSession = $derived(scheduleStore.activeSession);
 	let sessionStatus = $derived(scheduleStore.sessionStatus);
+
+	// Initialize stores on mount
+	onMount(async () => {
+		await scheduleStore.init();
+		await timersStore.init();
+	});
 
 	function handleStartSession() {
 		if (!currentSchedule || currentSchedule.phases.length === 0) {
@@ -39,6 +46,15 @@
 	function handlePreviousPhase() {
 		scheduleStore.previousPhase();
 	}
+
+	function openDisplayWindow() {
+		if (window.electronAPI) {
+			window.electronAPI.openDisplayWindow();
+		} else {
+			// Fallback for web: open in new window
+			window.open('/display', '_blank');
+		}
+	}
 </script>
 
 <svelte:head>
@@ -58,9 +74,9 @@
 			</div>
 			
 			<div class="header-actions">
-				<a href="{base}/display" target="_blank" class="btn btn-display">
+				<button onclick={openDisplayWindow} class="btn btn-display">
 					🖥️ Beamer-Ansicht öffnen
-				</a>
+				</button>
 				<a href="{base}/" class="btn btn-secondary">
 					← Zurück
 				</a>

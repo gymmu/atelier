@@ -1,0 +1,27 @@
+appId: ch.gymmu.atelier
+productName: Atelier
+copyright: Copyright © 2026
+
+directories:
+  output: dist
+  buildResources: build
+
+files:
+  - electron/**/*
+  - build/**/*
+  - package.json
+  - node_modules/**/*
+
+linux:
+  target:
+    - AppImage
+    - deb
+  category: Education
+  maintainer: gymmu.ch
+
+win:
+  target: nsis
+
+mac:
+  target: dmg
+  category: public.app-category.education

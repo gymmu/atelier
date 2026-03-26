@@ -1,5 +1,6 @@
 <script>
 	import { scheduleStore } from '$lib/stores/schedule.svelte.js';
+	import { timersStore } from '$lib/stores/timers.svelte.js';
 	import { onMount } from 'svelte';
 	import CurrentPhase from '$lib/components/display/CurrentPhase.svelte';
 	import ProgressBar from '$lib/components/display/ProgressBar.svelte';
@@ -12,7 +13,11 @@
 	let timeInterval;
 	let scheduleSelectorOpen = $state(false);
 
-	onMount(() => {
+	onMount(async () => {
+		// Initialize stores
+		await scheduleStore.init();
+		await timersStore.init();
+		
 		// Update time every second
 		timeInterval = setInterval(() => {
 			currentTime = new Date();
