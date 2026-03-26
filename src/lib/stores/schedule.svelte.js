@@ -1,6 +1,7 @@
 import { saveToStorage, loadFromStorage, STORAGE_KEYS } from '$lib/utils/storage.js';
 import { generateId, getRemainingTime } from '$lib/utils/timer.js';
 import { SESSION_STATUS } from '$lib/utils/constants.js';
+import { plansAPI } from '$lib/api/plans.js';
 
 /**
  * Schedule Store - Verwaltet Zeitpläne und aktive Sessions
@@ -72,12 +73,25 @@ export const scheduleStore = {
 		if (initialized) return;
 		
 		try {
-			// Load from storage (async now)
-			const loadedSchedules = await loadFromStorage(STORAGE_KEYS.SCHEDULES, []);
+			// Check if we need to migrate from localStorage
+			await this.migrateFromLocalStorage();
+			
+			// Load plans from file system (via plansAPI)
+			const plansMeta = await loadFromStorage(STORAGE_KEYS.SCHEDULES, []);
+			
+			// Load full plan data for each
+			const loadedPlans = [];
+			for (const meta of plansMeta) {
+				const fullPlan = await plansAPI.get(meta.id);
+				if (fullPlan) {
+					loadedPlans.push(fullPlan);
+				}
+			}
+			
 			const loadedScheduleId = await loadFromStorage(STORAGE_KEYS.CURRENT_SCHEDULE_ID, null);
 			const loadedSession = await loadFromStorage(STORAGE_KEYS.ACTIVE_SESSION, null);
 			
-			schedules = loadedSchedules;
+			schedules = loadedPlans;
 			currentScheduleId = loadedScheduleId;
 			activeSession = loadedSession;
 			initialized = true;
@@ -100,44 +114,77 @@ export const scheduleStore = {
 	},
 
 	/**
+	 * Migriert Pläne von localStorage zu Dateien
+	 */
+	async migrateFromLocalStorage() {
+		if (typeof window === 'undefined') return;
+		
+		try {
+			// Check if localStorage has old schedules
+			const oldSchedules = localStorage.getItem(STORAGE_KEYS.SCHEDULES);
+			if (!oldSchedules) return;
+			
+			const parsed = JSON.parse(oldSchedules);
+			if (!Array.isArray(parsed) || parsed.length === 0) return;
+			
+			console.log(`Migrating ${parsed.length} plans from localStorage to files...`);
+			
+			// Migrate via Electron API
+			if (window.electronAPI) {
+				const result = await plansAPI.migrate(parsed);
+				if (result.success) {
+					console.log(`Successfully migrated ${result.migrated} plans`);
+					// Clear old localStorage data
+					localStorage.removeItem(STORAGE_KEYS.SCHEDULES);
+				}
+			}
+		} catch (error) {
+			console.error('Error migrating plans from localStorage:', error);
+		}
+	},
+
+	/**
 	 * Erstellt einen neuen Zeitplan
 	 */
-	createSchedule(name, phases = []) {
+	async createSchedule(name, phases = []) {
 		const newSchedule = {
 			id: generateId(),
 			name,
 			phases,
 			startTime: '08:00', // Standard-Startzeit
+			classId: null,
 			createdAt: Date.now(),
 			updatedAt: Date.now()
 		};
 		schedules = [...schedules, newSchedule];
-		this.saveSchedules();
+		await this.saveSchedule(newSchedule);
 		return newSchedule;
 	},
 
 	/**
 	 * Aktualisiert einen bestehenden Zeitplan
 	 */
-	updateSchedule(id, updates) {
+	async updateSchedule(id, updates) {
+		const updated = schedules.find((s) => s.id === id);
+		if (!updated) return;
+		
+		const newData = { ...updated, ...updates, updatedAt: Date.now() };
 		schedules = schedules.map((schedule) =>
-			schedule.id === id
-				? { ...schedule, ...updates, updatedAt: Date.now() }
-				: schedule
+			schedule.id === id ? newData : schedule
 		);
-		this.saveSchedules();
+		await this.saveSchedule(newData);
 	},
 
 	/**
 	 * Löscht einen Zeitplan
 	 */
-	deleteSchedule(id) {
+	async deleteSchedule(id) {
+		await plansAPI.delete(id);
 		schedules = schedules.filter((s) => s.id !== id);
 		if (currentScheduleId === id) {
 			currentScheduleId = null;
 			saveToStorage(STORAGE_KEYS.CURRENT_SCHEDULE_ID, null);
 		}
-		this.saveSchedules();
 	},
 
 	/**
@@ -151,7 +198,7 @@ export const scheduleStore = {
 	/**
 	 * Fügt eine Phase zu einem Zeitplan hinzu
 	 */
-	addPhase(scheduleId, phase) {
+	async addPhase(scheduleId, phase) {
 		const schedule = schedules.find((s) => s.id === scheduleId);
 		if (!schedule) return;
 
@@ -160,7 +207,7 @@ export const scheduleStore = {
 			...phase
 		};
 
-		this.updateSchedule(scheduleId, {
+		await this.updateSchedule(scheduleId, {
 			phases: [...schedule.phases, newPhase]
 		});
 	},
@@ -168,7 +215,7 @@ export const scheduleStore = {
 	/**
 	 * Aktualisiert eine Phase
 	 */
-	updatePhase(scheduleId, phaseId, updates) {
+	async updatePhase(scheduleId, phaseId, updates) {
 		const schedule = schedules.find((s) => s.id === scheduleId);
 		if (!schedule) return;
 
@@ -176,24 +223,24 @@ export const scheduleStore = {
 			phase.id === phaseId ? { ...phase, ...updates } : phase
 		);
 
-		this.updateSchedule(scheduleId, { phases: updatedPhases });
+		await this.updateSchedule(scheduleId, { phases: updatedPhases });
 	},
 
 	/**
 	 * Löscht eine Phase
 	 */
-	deletePhase(scheduleId, phaseId) {
+	async deletePhase(scheduleId, phaseId) {
 		const schedule = schedules.find((s) => s.id === scheduleId);
 		if (!schedule) return;
 
 		const updatedPhases = schedule.phases.filter((phase) => phase.id !== phaseId);
-		this.updateSchedule(scheduleId, { phases: updatedPhases });
+		await this.updateSchedule(scheduleId, { phases: updatedPhases });
 	},
 
 	/**
 	 * Verschiebt eine Phase
 	 */
-	movePhase(scheduleId, fromIndex, toIndex) {
+	async movePhase(scheduleId, fromIndex, toIndex) {
 		const schedule = schedules.find((s) => s.id === scheduleId);
 		if (!schedule) return;
 
@@ -201,7 +248,7 @@ export const scheduleStore = {
 		const [movedPhase] = phases.splice(fromIndex, 1);
 		phases.splice(toIndex, 0, movedPhase);
 
-		this.updateSchedule(scheduleId, { phases });
+		await this.updateSchedule(scheduleId, { phases });
 	},
 
 	/**
@@ -349,10 +396,31 @@ export const scheduleStore = {
 	},
 
 	/**
-	 * Speichert Zeitpläne im localStorage
+	 * Speichert einen einzelnen Zeitplan als Datei
 	 */
-	saveSchedules() {
-		saveToStorage(STORAGE_KEYS.SCHEDULES, schedules);
+	async saveSchedule(schedule) {
+		await plansAPI.save(schedule);
+	},
+
+	/**
+	 * Lädt Zeitpläne neu
+	 */
+	async loadSchedules() {
+		try {
+			const plansMeta = await plansAPI.getAll();
+			const loadedPlans = [];
+			
+			for (const meta of plansMeta) {
+				const fullPlan = await plansAPI.get(meta.id);
+				if (fullPlan) {
+					loadedPlans.push(fullPlan);
+				}
+			}
+			
+			schedules = loadedPlans;
+		} catch (error) {
+			console.error('Error loading schedules:', error);
+		}
 	},
 
 	/**

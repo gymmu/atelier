@@ -3,6 +3,7 @@
 
 import { sessionsAPI } from '../api/sessions.js';
 import { timersAPI } from '../api/timers.js';
+import { plansAPI } from '../api/plans.js';
 
 const STORAGE_KEYS = {
 	SCHEDULES: 'atelier_schedules',
@@ -29,6 +30,10 @@ export async function saveToStorage(key, data) {
 				await sessionsAPI.save(data);
 			} else if (key === STORAGE_KEYS.STUDENT_TIMERS) {
 				await timersAPI.save(data);
+			} else if (key === STORAGE_KEYS.SCHEDULES) {
+				// Plans are now stored as files - no action needed here
+				// They are saved via plansAPI.save() directly
+				return;
 			}
 			// For other keys, still use localStorage as fallback
 			else {
@@ -63,6 +68,10 @@ export async function loadFromStorage(key, defaultValue = null) {
 			} else if (key === STORAGE_KEYS.STUDENT_TIMERS) {
 				const data = await timersAPI.get();
 				return data || defaultValue;
+			} else if (key === STORAGE_KEYS.SCHEDULES) {
+				// Load plans from file system
+				const plans = await plansAPI.getAll();
+				return plans || defaultValue;
 			}
 			// For other keys, still use localStorage as fallback
 			else {

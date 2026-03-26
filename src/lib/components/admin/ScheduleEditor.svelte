@@ -12,13 +12,13 @@
 	let editingStartTime = $state(false);
 	let newStartTime = $state(schedule.startTime || '08:00');
 
-	function handleAddPhase(phase) {
-		scheduleStore.addPhase(schedule.id, phase);
+	async function handleAddPhase(phase) {
+		await scheduleStore.addPhase(schedule.id, phase);
 	}
 
-	function handleDeletePhase(phaseId) {
+	async function handleDeletePhase(phaseId) {
 		if (confirm('Diese Phase wirklich löschen?')) {
-			scheduleStore.deletePhase(schedule.id, phaseId);
+			await scheduleStore.deletePhase(schedule.id, phaseId);
 		}
 	}
 
@@ -26,8 +26,8 @@
 		editingPhaseId = phaseId;
 	}
 
-	function handleUpdatePhase(phaseId, updates) {
-		scheduleStore.updatePhase(schedule.id, phaseId, updates);
+	async function handleUpdatePhase(phaseId, updates) {
+		await scheduleStore.updatePhase(schedule.id, phaseId, updates);
 		editingPhaseId = null;
 	}
 
@@ -35,16 +35,16 @@
 		editingPhaseId = null;
 	}
 
-	function handleSaveName() {
+	async function handleSaveName() {
 		if (newName.trim()) {
-			scheduleStore.updateSchedule(schedule.id, { name: newName.trim() });
+			await scheduleStore.updateSchedule(schedule.id, { name: newName.trim() });
 			editingName = false;
 		}
 	}
 
-	function handleSaveStartTime() {
+	async function handleSaveStartTime() {
 		if (newStartTime) {
-			scheduleStore.updateSchedule(schedule.id, { startTime: newStartTime });
+			await scheduleStore.updateSchedule(schedule.id, { startTime: newStartTime });
 			editingStartTime = false;
 		}
 	}
@@ -75,11 +75,11 @@
 		event.dataTransfer.dropEffect = 'move';
 	}
 
-	function handleDrop(event, toIndex) {
+	async function handleDrop(event, toIndex) {
 		event.preventDefault();
 		const fromIndex = parseInt(event.dataTransfer.getData('text/plain'));
 		if (fromIndex !== toIndex) {
-			scheduleStore.movePhase(schedule.id, fromIndex, toIndex);
+			await scheduleStore.movePhase(schedule.id, fromIndex, toIndex);
 		}
 	}
 </script>

@@ -8,19 +8,19 @@
 		scheduleStore.setCurrentSchedule(id);
 	}
 
-	function handleCreateSchedule() {
+	async function handleCreateSchedule() {
 		if (newScheduleName.trim()) {
-			const schedule = scheduleStore.createSchedule(newScheduleName.trim());
+			const schedule = await scheduleStore.createSchedule(newScheduleName.trim());
 			scheduleStore.setCurrentSchedule(schedule.id);
 			newScheduleName = '';
 			showNewScheduleForm = false;
 		}
 	}
 
-	function handleDeleteSchedule(id, event) {
+	async function handleDeleteSchedule(id, event) {
 		event.stopPropagation();
 		if (confirm('Diesen Zeitplan wirklich löschen?')) {
-			scheduleStore.deleteSchedule(id);
+			await scheduleStore.deleteSchedule(id);
 		}
 	}
 </script>

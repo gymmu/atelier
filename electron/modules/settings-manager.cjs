@@ -43,7 +43,8 @@ class SettingsManager {
 			globalSettings = {
 				workingDirectory: null,
 				theme: 'dark',
-				lastOpened: null
+				lastOpened: null,
+				recentDirectories: []
 			};
 		}
 
@@ -110,11 +111,42 @@ class SettingsManager {
 		await this.set('workingDirectory', dirPath);
 		await this.set('lastOpened', Date.now());
 		
+		// Update recent directories
+		await this.addToRecentDirectories(dirPath);
+		
 		// Update local settings file path
 		this.localSettingsFile = path.join(dirPath, '.atelier', 'settings.json');
 		
 		// Create .atelier directory
 		await fs.mkdir(path.join(dirPath, '.atelier'), { recursive: true });
+	}
+
+	async addToRecentDirectories(dirPath) {
+		if (!this.settings) {
+			await this.load();
+		}
+
+		let recent = this.settings.recentDirectories || [];
+		
+		// Remove if already exists
+		recent = recent.filter(item => item.path !== dirPath);
+		
+		// Add to front
+		recent.unshift({
+			path: dirPath,
+			name: path.basename(dirPath),
+			lastAccessed: Date.now()
+		});
+		
+		// Keep only last 10
+		recent = recent.slice(0, 10);
+		
+		this.settings.recentDirectories = recent;
+		await this.save();
+	}
+
+	getRecentDirectories() {
+		return this.get('recentDirectories', []);
 	}
 
 	getWorkingDirectory() {

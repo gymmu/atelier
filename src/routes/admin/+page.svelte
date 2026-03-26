@@ -1,20 +1,31 @@
 <script>
 	import { scheduleStore } from '$lib/stores/schedule.svelte.js';
 	import { timersStore } from '$lib/stores/timers.svelte.js';
+	import { classesStore } from '$lib/stores/classes.svelte.js';
 	import { base } from '$app/paths';
 	import { onMount } from 'svelte';
-	import ClassSelector from '$lib/components/admin/ClassSelector.svelte';
+	import PlanSelector from '$lib/components/admin/PlanSelector.svelte';
 	import ScheduleEditor from '$lib/components/admin/ScheduleEditor.svelte';
+	import ClassEditor from '$lib/components/admin/ClassEditor.svelte';
+	import PlanEditor from '$lib/components/admin/PlanEditor.svelte';
 	import { SESSION_STATUS } from '$lib/utils/constants.js';
 
 	let currentSchedule = $derived(scheduleStore.currentSchedule);
 	let activeSession = $derived(scheduleStore.activeSession);
 	let sessionStatus = $derived(scheduleStore.sessionStatus);
+	let currentClass = $derived(classesStore.currentClass);
+
+	// Editor states
+	let showClassEditor = $state(false);
+	let showPlanEditor = $state(false);
+	let editingClass = $state(null);
+	let editingPlan = $state(null);
 
 	// Initialize stores on mount
 	onMount(async () => {
 		await scheduleStore.init();
 		await timersStore.init();
+		await classesStore.init();
 	});
 
 	function handleStartSession() {
@@ -55,6 +66,51 @@
 			window.open('/display', '_blank');
 		}
 	}
+
+	function handleEditClass() {
+		if (currentClass) {
+			editingClass = currentClass;
+			showClassEditor = true;
+		}
+	}
+
+	function handleNewClass() {
+		editingClass = null;
+		showClassEditor = true;
+	}
+
+	function handleEditPlan() {
+		if (currentSchedule) {
+			editingPlan = currentSchedule;
+			showPlanEditor = true;
+		}
+	}
+
+	function handleNewPlan() {
+		editingPlan = null;
+		showPlanEditor = true;
+	}
+
+	function handleClassSaved() {
+		// Refresh classes
+		classesStore.loadClasses();
+	}
+
+	function handlePlanSaved() {
+		// Refresh schedules
+		scheduleStore.loadSchedules();
+	}
+
+	function handleRunInBeamer() {
+		if (currentSchedule) {
+			// Set the plan as current (if not already)
+			if (currentSchedule.id !== scheduleStore.currentScheduleId) {
+				scheduleStore.setCurrentSchedule(currentSchedule.id);
+			}
+			// Open beamer view without starting a session
+			openDisplayWindow();
+		}
+	}
 </script>
 
 <svelte:head>
@@ -74,6 +130,19 @@
 			</div>
 			
 			<div class="header-actions">
+				{#if currentClass}
+					<button onclick={handleEditClass} class="btn btn-edit">
+						✏️ Klasse bearbeiten
+					</button>
+				{/if}
+				{#if currentSchedule}
+					<button onclick={handleEditPlan} class="btn btn-edit">
+						📄 Plan bearbeiten
+					</button>
+					<button onclick={handleRunInBeamer} class="btn btn-run">
+						🎯 In Beamer öffnen
+					</button>
+				{/if}
 				<button onclick={openDisplayWindow} class="btn btn-display">
 					🖥️ Beamer-Ansicht öffnen
 				</button>
@@ -119,7 +188,7 @@
 
 	<main class="admin-content">
 		<aside class="sidebar">
-			<ClassSelector />
+			<PlanSelector />
 		</aside>
 
 		<section class="main-area">
@@ -135,6 +204,10 @@
 		</section>
 	</main>
 </div>
+
+<!-- Editors -->
+<ClassEditor bind:isOpen={showClassEditor} classData={editingClass} onSave={handleClassSaved} />
+<PlanEditor bind:isOpen={showPlanEditor} planData={editingPlan} onSave={handlePlanSaved} />
 
 <style>
 	.admin-page {
@@ -245,6 +318,27 @@
 	.btn-success:hover {
 		background: #45a049;
 		transform: translateY(-1px);
+	}
+
+	.btn-edit {
+		background: rgba(0, 123, 192, 0.2);
+		color: var(--color-primary);
+		border: 1px solid var(--color-primary);
+	}
+
+	.btn-edit:hover {
+		background: rgba(0, 123, 192, 0.3);
+		transform: translateY(-1px);
+	}
+
+	.btn-run {
+		background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+		color: white;
+	}
+
+	.btn-run:hover {
+		transform: translateY(-1px);
+		box-shadow: 0 4px 12px rgba(240, 147, 251, 0.4);
 	}
 
 	.btn-warning {

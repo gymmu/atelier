@@ -16,7 +16,7 @@ class FileManager {
 		await fs.mkdir(this.basePath, { recursive: true });
 		
 		// Ensure data subdirectories exist
-		const dirs = ['classes', 'sessions', 'timers'];
+		const dirs = ['classes', 'sessions', 'timers', 'plans'];
 		for (const dir of dirs) {
 			await fs.mkdir(path.join(this.basePath, dir), { recursive: true });
 		}

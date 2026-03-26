@@ -4,48 +4,13 @@
 	import { scheduleStore } from '$lib/stores/schedule.svelte.js';
 	import UnifiedSidebar from '$lib/components/admin/UnifiedSidebar.svelte';
 	import UnifiedEditor from '$lib/components/admin/UnifiedEditor.svelte';
-	import WelcomeScreen from '$lib/components/admin/WelcomeScreen.svelte';
 
-	let hasWorkingDirectory = $state(false);
-	let workingDirectoryPath = $state(null);
 	let openItems = $state([]);
 	let activeItem = $state(null);
-	let loading = $state(true);
 
 	onMount(async () => {
-		await checkWorkingDirectory();
 		await scheduleStore.init();
 	});
-
-	async function checkWorkingDirectory() {
-		if (!window.electronAPI) {
-			loading = false;
-			return;
-		}
-
-		const path = await window.electronAPI.getWorkingDirectory();
-		
-		if (path) {
-			workingDirectoryPath = path;
-			hasWorkingDirectory = true;
-		}
-		
-		loading = false;
-	}
-
-	async function handleDirectorySelect(path) {
-		if (!window.electronAPI) return;
-
-		// Set the working directory
-		const newPath = await window.electronAPI.chooseWorkingDirectory();
-		if (newPath) {
-			workingDirectoryPath = newPath;
-			hasWorkingDirectory = true;
-			
-			// Reload the page to refresh file explorer
-			window.location.reload();
-		}
-	}
 
 	function handlePlanSelect(plan) {
 		// Check if plan is already open
@@ -88,94 +53,52 @@
 			window.open('/display', '_blank');
 		}
 	}
-
-	async function handleChangeDirectory() {
-		await handleDirectorySelect();
-	}
 </script>
 
 <svelte:head>
-	<title>Atelier</title>
+	<title>Main View - Atelier</title>
 </svelte:head>
 
-{#if loading}
-	<div class="loading-screen">
-		<div class="spinner"></div>
-		<p>Lade...</p>
-	</div>
-{:else if !hasWorkingDirectory}
-	<WelcomeScreen onDirectorySelect={handleDirectorySelect} />
-{:else}
-	<div class="admin-page">
-		<header class="app-header">
-			<div class="header-left">
-				<h1>Atelier</h1>
-				<span class="working-dir" title={workingDirectoryPath}>
-					📁 {workingDirectoryPath?.split('/').pop() || 'Kein Verzeichnis'}
-				</span>
-			</div>
-			
-			<div class="header-actions">
-				<button class="btn btn-secondary" onclick={handleChangeDirectory}>
-					📁 Verzeichnis wechseln
-				</button>
-				<button
-					class="btn btn-display"
-					onclick={() => window.electronAPI ? window.electronAPI.openDisplayWindow() : window.open('/display', '_blank')}
-				>
-					🖥️ Beamer-Ansicht
-				</button>
-			</div>
-		</header>
+<div class="main-view">
+	<header class="app-header">
+		<div class="header-left">
+			<h1>Atelier</h1>
+		</div>
+		
+		<div class="header-actions">
+			<button
+				class="btn btn-display"
+				onclick={() => window.electronAPI ? window.electronAPI.openDisplayWindow() : window.open('/display', '_blank')}
+			>
+				🖥️ Beamer-Ansicht
+			</button>
+			<a href="{base}/" class="btn btn-secondary">
+				← Home
+			</a>
+		</div>
+	</header>
 
-		<main class="main-content">
-			<aside class="sidebar">
-				<UnifiedSidebar
-					onPlanSelect={handlePlanSelect}
-					onFileSelect={handleFileSelect}
-					onNewPlan={handleNewPlan}
-				/>
-			</aside>
+	<main class="main-content">
+		<aside class="sidebar">
+			<UnifiedSidebar
+				onPlanSelect={handlePlanSelect}
+				onFileSelect={handleFileSelect}
+				onNewPlan={handleNewPlan}
+			/>
+		</aside>
 
-			<section class="editor-area">
-				<UnifiedEditor
-					bind:openItems
-					bind:activeItem
-					onRunPlan={handleRunPlan}
-				/>
-			</section>
-		</main>
-	</div>
-{/if}
+		<section class="editor-area">
+			<UnifiedEditor
+				bind:openItems
+				bind:activeItem
+				onRunPlan={handleRunPlan}
+			/>
+		</section>
+	</main>
+</div>
 
 <style>
-	.loading-screen {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		height: 100vh;
-		background: #0d1117;
-		color: #e6edf3;
-		gap: 1rem;
-	}
-
-	.spinner {
-		width: 50px;
-		height: 50px;
-		border: 4px solid #30363d;
-		border-top-color: #1f6feb;
-		border-radius: 50%;
-		animation: spin 1s linear infinite;
-	}
-
-	@keyframes spin {
-		to {
-			transform: rotate(360deg);
-		}
-	}
-
-	.admin-page {
+	.main-view {
 		display: flex;
 		flex-direction: column;
 		height: 100vh;
@@ -196,26 +119,11 @@
 		flex-shrink: 0;
 	}
 
-	.header-left {
-		display: flex;
-		align-items: center;
-		gap: 1rem;
-	}
-
 	.header-left h1 {
 		margin: 0;
 		font-size: 1.25rem;
 		font-weight: 600;
 		color: #e6edf3;
-	}
-
-	.working-dir {
-		font-size: 0.875rem;
-		color: #8b949e;
-		max-width: 300px;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
 	}
 
 	.header-actions {
@@ -233,8 +141,6 @@
 		transition: all 0.2s;
 		text-decoration: none;
 		display: inline-block;
-		background: transparent;
-		color: #e6edf3;
 	}
 
 	.btn-secondary {
@@ -278,10 +184,6 @@
 	@media (max-width: 768px) {
 		.sidebar {
 			width: 240px;
-		}
-
-		.working-dir {
-			display: none;
 		}
 	}
 </style>

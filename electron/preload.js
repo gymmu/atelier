@@ -32,6 +32,23 @@ contextBridge.exposeInMainWorld('electronAPI', {
 	getTimers: () => ipcRenderer.invoke('timers:get'),
 	saveTimers: (data) => ipcRenderer.invoke('timers:save', data),
 
+	// File System Explorer
+	readDirectory: (dirPath) => ipcRenderer.invoke('fs:readDirectory', dirPath),
+	readFile: (filePath) => ipcRenderer.invoke('fs:readFile', filePath),
+	writeFile: (filePath, content) => ipcRenderer.invoke('fs:writeFile', filePath, content),
+	deleteFile: (filePath) => ipcRenderer.invoke('fs:deleteFile', filePath),
+	createDirectory: (dirPath) => ipcRenderer.invoke('fs:createDirectory', dirPath),
+
+	// Plans
+	getPlans: () => ipcRenderer.invoke('plans:list'),
+	getPlan: (planId) => ipcRenderer.invoke('plans:get', planId),
+	getPlanMarkdown: (planId) => ipcRenderer.invoke('plans:getMarkdown', planId),
+	savePlan: (data) => ipcRenderer.invoke('plans:save', data),
+	savePlanMarkdown: (planId, content, frontmatter) =>
+		ipcRenderer.invoke('plans:saveMarkdown', planId, content, frontmatter),
+	deletePlan: (planId) => ipcRenderer.invoke('plans:delete', planId),
+	migratePlans: (localStoragePlans) => ipcRenderer.invoke('plans:migrate', localStoragePlans),
+
 	// Multi-Window
 	openDisplayWindow: () => ipcRenderer.invoke('window:open-display'),
 	closeDisplayWindow: () => ipcRenderer.invoke('window:close-display'),
@@ -42,6 +59,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 	setSetting: (key, value) => ipcRenderer.invoke('settings:set', key, value),
 	getWorkingDirectory: () => ipcRenderer.invoke('settings:getWorkingDirectory'),
 	getSettingsLocation: () => ipcRenderer.invoke('settings:getSettingsLocation'),
+	getRecentDirectories: () => ipcRenderer.invoke('settings:getRecentDirectories'),
 	chooseWorkingDirectory: () => ipcRenderer.invoke('settings:chooseWorkingDirectory'),
 
 	// Listeners for Window-to-Window Communication
