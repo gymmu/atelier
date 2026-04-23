@@ -355,9 +355,10 @@ export const scheduleStore = {
 	},
 
 	/**
-	 * Wechselt zur nächsten Phase
+	 * Wechselt zur nächsten Phase.
+	 * @param {boolean} [carryOverTime=false] - Wenn true, wird die verbleibende Zeit der aktuellen Phase zur nächsten Phase dazugerechnet.
 	 */
-	nextPhase() {
+	nextPhase(carryOverTime = false) {
 		if (!activeSession || !currentSchedule) return;
 
 		const nextIndex = activeSession.currentPhaseIndex + 1;
@@ -368,10 +369,14 @@ export const scheduleStore = {
 			return;
 		}
 
+		// Verbleibende Zeit der aktuellen Phase berechnen
+		const remainingMs = carryOverTime ? Math.max(0, this.getRemainingPhaseTime()) : 0;
+
 		activeSession = {
 			...activeSession,
 			currentPhaseIndex: nextIndex,
-			phaseStartTime: Date.now()
+			phaseStartTime: Date.now(),
+			bonusTimeMs: remainingMs
 		};
 
 		this.saveSession();
@@ -393,17 +398,27 @@ export const scheduleStore = {
 	},
 
 	/**
-	 * Berechnet die verbleibende Zeit der aktuellen Phase
+	 * Berechnet die verbleibende Zeit der aktuellen Phase (inkl. Bonus aus vorheriger Phase)
 	 */
 	getRemainingPhaseTime() {
 		if (!activeSession || !currentPhase) return 0;
 
+		const bonusMinutes = (activeSession.bonusTimeMs ?? 0) / 60000;
 		return getRemainingTime(
 			activeSession.phaseStartTime,
-			currentPhase.duration,
+			currentPhase.duration + bonusMinutes,
 			activeSession.isPaused,
 			activeSession.pausedAt
 		);
+	},
+
+	/**
+	 * Gibt die effektive Dauer der aktuellen Phase zurück (inkl. Bonus)
+	 */
+	get currentPhaseDuration() {
+		if (!currentPhase) return 0;
+		const bonusMinutes = (activeSession?.bonusTimeMs ?? 0) / 60000;
+		return currentPhase.duration + bonusMinutes;
 	},
 
 	/**

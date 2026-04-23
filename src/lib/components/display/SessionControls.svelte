@@ -29,7 +29,7 @@
 	}
 
 	function handleNextPhase() {
-		scheduleStore.nextPhase();
+		scheduleStore.nextPhase(true);
 	}
 
 	function handlePreviousPhase() {

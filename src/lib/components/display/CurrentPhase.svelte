@@ -19,6 +19,7 @@
 
 	let phase = $derived(scheduleStore.currentPhase);
 	let session = $derived(scheduleStore.activeSession);
+	let phaseDuration = $derived(scheduleStore.currentPhaseDuration);
 	let status = $derived(scheduleStore.sessionStatus);
 	let schedule = $derived(scheduleStore.currentSchedule);
 
@@ -47,7 +48,7 @@
 
 	let phaseEndTime = $derived.by(() => {
 		if (!phaseStartTime || !phase) return null;
-		return new Date(phaseStartTime.getTime() + phase.duration * 60 * 1000);
+		return new Date(phaseStartTime.getTime() + phaseDuration * 60 * 1000);
 	});
 
 	let formatTime = (date) => {
@@ -92,7 +93,7 @@
 			<div class="timer-display">
 				<Timer
 					startTime={session.phaseStartTime}
-					duration={phase.duration}
+					duration={phaseDuration}
 					isPaused={session.isPaused}
 					pausedAt={session.pausedAt}
 					size="large"
