@@ -4,6 +4,28 @@ import { SESSION_STATUS } from '$lib/utils/constants.js';
 import { plansAPI } from '$lib/api/plans.js';
 
 /**
+ * Konvertiert eine YAML-Lektion in das Schedule-Format des Displays.
+ * Phasen: dauer → duration (beide in Minuten), farbe → color, beschreibung → description
+ */
+function lektionToSchedule(lektion) {
+	return {
+		id: lektion._filename ?? lektion.datum + '-' + lektion.fach,
+		name: [lektion.fach, lektion.klasse, lektion.thema].filter(Boolean).join(' – '),
+		startTime: lektion.startzeit ?? '08:00',
+		classId: null,
+		phases: (lektion.phasen ?? []).map((p) => ({
+			id: generateId(),
+			name: p.name ?? '',
+			duration: p.dauer ?? 0,
+			type: 'custom',
+			icon: p.icon ?? '📝',
+			color: p.farbe ?? '#007BC0',
+			description: p.beschreibung ?? ''
+		}))
+	};
+}
+
+/**
  * Schedule Store - Verwaltet Zeitpläne und aktive Sessions
  * Verwendet Svelte 5 Runes für Reaktivität
  */
@@ -193,6 +215,23 @@ export const scheduleStore = {
 	setCurrentSchedule(id) {
 		currentScheduleId = id;
 		saveToStorage(STORAGE_KEYS.CURRENT_SCHEDULE_ID, id);
+	},
+
+	/**
+	 * Setzt eine YAML-Lektion als aktuellen Zeitplan (temporär, nicht persistiert).
+	 * Konvertiert das Lektion-Format in das Schedule-Format.
+	 */
+	setCurrentLektion(lektion) {
+		const schedule = lektionToSchedule(lektion);
+		// Temporär in die Schedules-Liste einfügen (oder ersetzen falls schon vorhanden)
+		const existingIndex = schedules.findIndex((s) => s.id === schedule.id);
+		if (existingIndex >= 0) {
+			schedules = schedules.map((s, i) => (i === existingIndex ? schedule : s));
+		} else {
+			schedules = [...schedules, schedule];
+		}
+		currentScheduleId = schedule.id;
+		saveToStorage(STORAGE_KEYS.CURRENT_SCHEDULE_ID, schedule.id);
 	},
 
 	/**

@@ -19,13 +19,15 @@ class WindowManager {
 			}
 		});
 
+		const port = process.env.VITE_PORT || '5173';
 		const url = this.isDev
-			? 'http://localhost:5173'
+			? `http://localhost:${port}`
 			: `file://${path.join(__dirname, '../../build/index.html')}`;
 
 		this.mainWindow.loadURL(url);
 
-		if (this.isDev) this.mainWindow.webContents.openDevTools();
+		const openDevTools = process.env.ELECTRON_DEVTOOLS !== 'false';
+		if (this.isDev && openDevTools) this.mainWindow.webContents.openDevTools();
 
 		this.mainWindow.on('closed', () => {
 			this.mainWindow = null;
@@ -51,13 +53,15 @@ class WindowManager {
 			}
 		});
 
+		const port = process.env.VITE_PORT || '5173';
 		const url = this.isDev
-			? 'http://localhost:5173/display'
+			? `http://localhost:${port}/display`
 			: `file://${path.join(__dirname, '../../build/index.html')}#/display`;
 
 		this.displayWindow.loadURL(url);
 
-		if (this.isDev) this.displayWindow.webContents.openDevTools();
+		const openDevTools = process.env.ELECTRON_DEVTOOLS !== 'false';
+		if (this.isDev && openDevTools) this.displayWindow.webContents.openDevTools();
 
 		this.displayWindow.on('closed', () => {
 			this.displayWindow = null;

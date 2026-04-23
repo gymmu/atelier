@@ -29,7 +29,7 @@ async function initWorkingDirectory() {
 
 		if (result.canceled || result.filePaths.length === 0) {
 			// User canceled, use default in Documents
-			workingDir = path.join(app.getPath('documents'), 'Atelier');
+			workingDir = path.join(app.getPath('home'), 'atelier');
 		} else {
 			workingDir = result.filePaths[0];
 		}
@@ -52,7 +52,7 @@ app.whenReady().then(async () => {
 	const workingDir = await initWorkingDirectory();
 	console.log('Working directory:', workingDir);
 	console.log('Settings location:', settingsManager.getSettingsLocation());
-	console.log('Data directory:', path.join(workingDir, '.atelier'));
+	console.log('Data directory:', workingDir);
 
 	// Setup IPC handlers
 	setupIPC();

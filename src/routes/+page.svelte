@@ -2,19 +2,28 @@
 	import { onMount } from 'svelte';
 	import { base } from '$app/paths';
 	import { scheduleStore } from '$lib/stores/schedule.svelte.js';
-	import UnifiedSidebar from '$lib/components/admin/UnifiedSidebar.svelte';
+	import { classesStore } from '$lib/stores/classes.svelte.js';
+	import { studentsStore } from '$lib/stores/students.svelte.js';
+	import { lektionenStore } from '$lib/stores/lektionen.svelte.js';
+	import ActivityBar from '$lib/components/admin/ActivityBar.svelte';
+	import SidebarPanel from '$lib/components/admin/SidebarPanel.svelte';
 	import UnifiedEditor from '$lib/components/admin/UnifiedEditor.svelte';
+	import LektionEditor from '$lib/components/admin/lektionen/LektionEditor.svelte';
 	import WelcomeScreen from '$lib/components/admin/WelcomeScreen.svelte';
 
 	let hasWorkingDirectory = $state(false);
 	let workingDirectoryPath = $state(null);
 	let openItems = $state([]);
 	let activeItem = $state(null);
+	let activeView = $state('lektionen');
 	let loading = $state(true);
 
 	onMount(async () => {
 		await checkWorkingDirectory();
 		await scheduleStore.init();
+		await classesStore.init();
+		await studentsStore.init();
+		await lektionenStore.init();
 	});
 
 	async function checkWorkingDirectory() {
@@ -77,6 +86,23 @@
 		handlePlanSelect(plan);
 	}
 
+	function handleClassSelect(classItem) {
+		// Check if class is already open
+		const existing = openItems.find((i) => i.type === 'class' && i.id === classItem.id);
+		
+		if (existing) {
+			activeItem = existing;
+		} else {
+			const item = { ...classItem, type: 'class' };
+			openItems = [...openItems, item];
+			activeItem = item;
+		}
+	}
+
+	function handleNewClass(classItem) {
+		handleClassSelect(classItem);
+	}
+
 	function handleRunPlan(plan) {
 		// Set the plan as current
 		scheduleStore.setCurrentSchedule(plan.id);
@@ -89,8 +115,29 @@
 		}
 	}
 
+	function handleLektionSelect(filename) {
+		lektionenStore.selectLektion(filename);
+	}
+
+	function handleNewLektion(filename) {
+		// Lektion ist bereits im Store gewählt
+	}
+
+	function handleRunLektion(lektion) {
+		scheduleStore.setCurrentLektion(lektion);
+		if (window.electronAPI) {
+			window.electronAPI.openDisplayWindow();
+		} else {
+			window.open('/display', '_blank');
+		}
+	}
+
 	async function handleChangeDirectory() {
 		await handleDirectorySelect();
+	}
+
+	function handleViewChange(view) {
+		activeView = view;
 	}
 </script>
 
@@ -129,20 +176,31 @@
 		</header>
 
 		<main class="main-content">
+			<ActivityBar bind:activeView onViewChange={handleViewChange} />
+			
 			<aside class="sidebar">
-				<UnifiedSidebar
+				<SidebarPanel
+					{activeView}
 					onPlanSelect={handlePlanSelect}
+					onClassSelect={handleClassSelect}
 					onFileSelect={handleFileSelect}
 					onNewPlan={handleNewPlan}
+					onNewClass={handleNewClass}
+					onLektionSelect={handleLektionSelect}
+					onNewLektion={handleNewLektion}
 				/>
 			</aside>
 
 			<section class="editor-area">
-				<UnifiedEditor
-					bind:openItems
-					bind:activeItem
-					onRunPlan={handleRunPlan}
-				/>
+				{#if activeView === 'lektionen'}
+					<LektionEditor onRunLektion={handleRunLektion} />
+				{:else}
+					<UnifiedEditor
+						bind:openItems
+						bind:activeItem
+						onRunPlan={handleRunPlan}
+					/>
+				{/if}
 			</section>
 		</main>
 	</div>
@@ -263,9 +321,7 @@
 	}
 
 	.sidebar {
-		width: 280px;
 		flex-shrink: 0;
-		border-right: 1px solid #30363d;
 		overflow: hidden;
 	}
 

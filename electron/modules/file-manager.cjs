@@ -3,20 +3,21 @@ const path = require('path');
 const { parse } = require('csv-parse/sync');
 const { stringify } = require('csv-stringify/sync');
 const matter = require('gray-matter');
+const YAML = require('yaml');
 
 class FileManager {
 	constructor(workingDirectory) {
-		// All data goes into .atelier/ subdirectory
-		this.basePath = path.join(workingDirectory, '.atelier');
+		// Data lives directly in the working directory
+		this.basePath = workingDirectory;
 		this.ensureDirectories();
 	}
 
 	async ensureDirectories() {
-		// Ensure .atelier base directory exists
+		// Ensure base directory exists
 		await fs.mkdir(this.basePath, { recursive: true });
 		
 		// Ensure data subdirectories exist
-		const dirs = ['classes', 'sessions', 'timers', 'plans'];
+		const dirs = ['classes', 'sessions', 'timers', 'plans', 'lektionen'];
 		for (const dir of dirs) {
 			await fs.mkdir(path.join(this.basePath, dir), { recursive: true });
 		}
@@ -76,6 +77,36 @@ class FileManager {
 		await fs.mkdir(path.dirname(fullPath), { recursive: true });
 		const csv = stringify(data, { header: true });
 		await fs.writeFile(fullPath, csv, 'utf8');
+	}
+
+	// YAML Operations
+	async readYAML(filePath) {
+		const fullPath = path.join(this.basePath, filePath);
+		try {
+			const content = await fs.readFile(fullPath, 'utf8');
+			return YAML.parse(content);
+		} catch (err) {
+			if (err.code === 'ENOENT') return null;
+			throw err;
+		}
+	}
+
+	async writeYAML(filePath, data) {
+		const fullPath = path.join(this.basePath, filePath);
+		await fs.mkdir(path.dirname(fullPath), { recursive: true });
+		const content = YAML.stringify(data, { lineWidth: 0 });
+		await fs.writeFile(fullPath, content, 'utf8');
+	}
+
+	async listLektionen() {
+		const fullPath = path.join(this.basePath, 'lektionen');
+		try {
+			const entries = await fs.readdir(fullPath);
+			return entries.filter((f) => f.endsWith('.yaml')).sort();
+		} catch (err) {
+			if (err.code === 'ENOENT') return [];
+			throw err;
+		}
 	}
 
 	// Directory Operations

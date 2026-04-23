@@ -1,5 +1,6 @@
 <script>
 	import { scheduleStore } from '$lib/stores/schedule.svelte.js';
+	import { lektionenStore } from '$lib/stores/lektionen.svelte.js';
 	import { timersStore } from '$lib/stores/timers.svelte.js';
 	import { onMount } from 'svelte';
 	import CurrentPhase from '$lib/components/display/CurrentPhase.svelte';
@@ -16,6 +17,7 @@
 	onMount(async () => {
 		// Initialize stores
 		await scheduleStore.init();
+		await lektionenStore.init();
 		await timersStore.init();
 		
 		// Update time every second

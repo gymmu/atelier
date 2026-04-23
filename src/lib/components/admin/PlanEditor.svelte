@@ -22,6 +22,22 @@
 	// Markdown mode
 	let markdownContent = $state('');
 	let validationErrors = $state([]);
+	let errorTimeoutId = null;
+
+	// Auto-clear validation errors after 5 seconds
+	$effect(() => {
+		if (validationErrors.length > 0) {
+			// Clear any existing timeout
+			if (errorTimeoutId) {
+				clearTimeout(errorTimeoutId);
+			}
+			// Set new timeout to clear errors after 5 seconds
+			errorTimeoutId = setTimeout(() => {
+				validationErrors = [];
+				errorTimeoutId = null;
+			}, 5000);
+		}
+	});
 
 	// Initialize when planData changes
 	$effect(() => {
@@ -51,13 +67,70 @@
 		isOpen = false;
 	}
 
+	// Helper function to safely clone and remove Svelte proxies
+	function safeClone(obj, depth = 0) {
+		// Prevent infinite recursion
+		if (depth > 50) {
+			console.warn('Max clone depth reached');
+			return null;
+		}
+		
+		// Handle primitives and null
+		if (obj === null || typeof obj !== 'object') {
+			return obj;
+		}
+		
+		// Handle Date objects
+		if (obj instanceof Date) {
+			return obj.getTime();
+		}
+		
+		// Handle Arrays
+		if (Array.isArray(obj)) {
+			return obj.map(item => safeClone(item, depth + 1));
+		}
+		
+		// Handle plain objects
+		const cloned = {};
+		for (const key in obj) {
+			// Skip prototype properties and functions
+			if (!Object.prototype.hasOwnProperty.call(obj, key)) {
+				continue;
+			}
+			
+			const value = obj[key];
+			
+			// Skip functions
+			if (typeof value === 'function') {
+				continue;
+			}
+			
+			// Skip symbols
+			if (typeof value === 'symbol') {
+				continue;
+			}
+			
+			// Skip undefined
+			if (value === undefined) {
+				continue;
+			}
+			
+			try {
+				cloned[key] = safeClone(value, depth + 1);
+			} catch (err) {
+				console.warn(`Skipping property ${key} during clone:`, err);
+			}
+		}
+		return cloned;
+	}
+
 	async function handleSave() {
 		try {
 			let planToSave;
 
 			if (editMode === 'ui') {
 				// Deep clone to remove Svelte proxies and ensure IPC compatibility
-				planToSave = JSON.parse(JSON.stringify(uiPlan));
+				planToSave = safeClone(uiPlan);
 				planToSave.updatedAt = Date.now();
 			} else if (editMode === 'json') {
 				// Parse from JSON
@@ -89,11 +162,23 @@
 			}
 
 			// Save JSON version
-			await plansAPI.save(planToSave);
+			try {
+				await plansAPI.save(planToSave);
+			} catch (error) {
+				console.error('Error saving plan JSON:', error);
+				validationErrors = ['Fehler beim Speichern (JSON): ' + error.message];
+				return;
+			}
 
 			// Save Markdown version
-			const { content, frontmatter } = planToMarkdownParts(planToSave);
-			await plansAPI.saveMarkdown(planToSave.id, content, frontmatter);
+			try {
+				const { content, frontmatter } = planToMarkdownParts(planToSave);
+				await plansAPI.saveMarkdown(planToSave.id, content, frontmatter);
+			} catch (error) {
+				console.error('Error saving plan markdown:', error);
+				validationErrors = ['Fehler beim Speichern (Markdown): ' + error.message];
+				return;
+			}
 
 			// Reload schedules in store
 			await scheduleStore.loadSchedules();

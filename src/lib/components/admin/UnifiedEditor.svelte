@@ -1,8 +1,10 @@
 <script>
 	import MonacoEditor from '$lib/components/shared/MonacoEditor.svelte';
+	import ClassEditor from '$lib/components/admin/classes/ClassEditor.svelte';
 	import { planToMarkdown, planToMarkdownParts, markdownToPlan, validatePlan } from '$lib/utils/markdown-converter.js';
 	import { plansAPI } from '$lib/api/plans.js';
 	import { scheduleStore } from '$lib/stores/schedule.svelte.js';
+	import { classesStore } from '$lib/stores/classes.svelte.js';
 
 	let {
 		openItems = $bindable([]),
@@ -20,6 +22,22 @@
 	let jsonContent = $state('');
 	let markdownContent = $state('');
 	let validationErrors = $state([]);
+	let errorTimeoutId = null;
+
+	// Auto-clear validation errors after 5 seconds
+	$effect(() => {
+		if (validationErrors.length > 0) {
+			// Clear any existing timeout
+			if (errorTimeoutId) {
+				clearTimeout(errorTimeoutId);
+			}
+			// Set new timeout to clear errors after 5 seconds
+			errorTimeoutId = setTimeout(() => {
+				validationErrors = [];
+				errorTimeoutId = null;
+			}, 5000);
+		}
+	});
 
 	// Load file content
 	async function loadFileContent(file) {
@@ -35,6 +53,10 @@
 	async function loadPlanData(plan) {
 		const fullPlan = await plansAPI.get(plan.id);
 		if (fullPlan) {
+			// Ensure classIds array exists
+			if (!fullPlan.classIds) {
+				fullPlan.classIds = fullPlan.classId ? [fullPlan.classId] : [];
+			}
 			uiPlan = JSON.parse(JSON.stringify(fullPlan));
 			jsonContent = JSON.stringify(fullPlan, null, 2);
 			markdownContent = planToMarkdown(fullPlan);
@@ -53,6 +75,63 @@
 		}
 	}
 
+	// Helper function to safely clone and remove Svelte proxies
+	function safeClone(obj, depth = 0) {
+		// Prevent infinite recursion
+		if (depth > 50) {
+			console.warn('Max clone depth reached');
+			return null;
+		}
+		
+		// Handle primitives and null
+		if (obj === null || typeof obj !== 'object') {
+			return obj;
+		}
+		
+		// Handle Date objects
+		if (obj instanceof Date) {
+			return obj.getTime();
+		}
+		
+		// Handle Arrays
+		if (Array.isArray(obj)) {
+			return obj.map(item => safeClone(item, depth + 1));
+		}
+		
+		// Handle plain objects
+		const cloned = {};
+		for (const key in obj) {
+			// Skip prototype properties and functions
+			if (!Object.prototype.hasOwnProperty.call(obj, key)) {
+				continue;
+			}
+			
+			const value = obj[key];
+			
+			// Skip functions
+			if (typeof value === 'function') {
+				continue;
+			}
+			
+			// Skip symbols
+			if (typeof value === 'symbol') {
+				continue;
+			}
+			
+			// Skip undefined
+			if (value === undefined) {
+				continue;
+			}
+			
+			try {
+				cloned[key] = safeClone(value, depth + 1);
+			} catch (err) {
+				console.warn(`Skipping property ${key} during clone:`, err);
+			}
+		}
+		return cloned;
+	}
+
 	// Save plan
 	async function savePlan(plan) {
 		try {
@@ -60,7 +139,7 @@
 
 			if (planEditMode === 'ui') {
 				// Deep clone to remove Svelte proxies and ensure IPC compatibility
-				planToSave = JSON.parse(JSON.stringify(uiPlan));
+				planToSave = safeClone(uiPlan);
 				planToSave.updatedAt = Date.now();
 			} else if (planEditMode === 'json') {
 				try {
@@ -87,15 +166,37 @@
 				}
 			}
 
+		try {
 			await plansAPI.save(planToSave);
+		} catch (error) {
+			console.error('Error saving plan JSON:', error);
+			validationErrors = ['Fehler beim Speichern (JSON): ' + error.message];
+			return;
+		}
 
+		try {
 			const { content, frontmatter } = planToMarkdownParts(planToSave);
 			await plansAPI.saveMarkdown(planToSave.id, content, frontmatter);
+		} catch (error) {
+			console.error('Error saving plan markdown:', error);
+			validationErrors = ['Fehler beim Speichern (Markdown): ' + error.message];
+			return;
+		}
 
-			await scheduleStore.loadSchedules();
+		// Update class-plan associations
+		if (planToSave.classIds && planToSave.classIds.length > 0) {
+			for (const classId of planToSave.classIds) {
+				const classItem = classesStore.classes.find(c => c.id === classId);
+				if (classItem && !classItem.planIds?.includes(planToSave.id)) {
+					await classesStore.addPlan(classId, planToSave.id);
+				}
+			}
+		}
 
-			unsavedChanges.delete(plan.id);
-			unsavedChanges = new Set(unsavedChanges);
+		await scheduleStore.loadSchedules();
+
+		unsavedChanges.delete(plan.id);
+		unsavedChanges = new Set(unsavedChanges);
 			
 			// Reload plan data
 			await loadPlanData(planToSave);
@@ -397,6 +498,8 @@
 						{:else}
 							<div class="loading">Loading...</div>
 						{/if}
+					{:else if activeItem.type === 'class'}
+						<ClassEditor classItem={activeItem} />
 					{:else if activeItem.type === 'plan' && uiPlan}
 						{#if planEditMode === 'ui'}
 							<div class="plan-ui-editor">
@@ -418,6 +521,27 @@
 										bind:value={uiPlan.startTime}
 										oninput={handlePlanChange}
 									/>
+								</div>
+
+								<div class="form-group">
+									<label for="class-select">Klasse zuordnen (optional)</label>
+									<select
+										id="class-select"
+										value={uiPlan.classIds?.[0] || ''}
+										onchange={(e) => {
+											if (e.target.value) {
+												uiPlan.classIds = [e.target.value];
+											} else {
+												uiPlan.classIds = [];
+											}
+											handlePlanChange();
+										}}
+									>
+										<option value="">Keine Klasse</option>
+										{#each classesStore.activeClasses as classItem (classItem.id)}
+											<option value={classItem.id}>{classItem.name}</option>
+										{/each}
+									</select>
 								</div>
 
 								<div class="phases-section">

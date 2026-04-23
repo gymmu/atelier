@@ -151,12 +151,14 @@ function registerHandlers(fileManager, windowManager, settingsManager) {
 		}
 		await fileManager.writeJSON('plans/plans.json', plans);
 		
-		return data;
+		// Return a plain serializable object instead of the original data
+		return { success: true, id: planId };
 	});
 
 	ipcMain.handle('plans:saveMarkdown', async (event, planId, content, frontmatter) => {
 		await fileManager.writeMarkdown(`plans/${planId}.md`, content, frontmatter);
-		return { content, frontmatter };
+		// Return a simple success response instead of potentially problematic objects
+		return { success: true, planId };
 	});
 
 	ipcMain.handle('plans:delete', async (event, planId) => {
@@ -206,6 +208,168 @@ function registerHandlers(fileManager, windowManager, settingsManager) {
 		await fileManager.writeJSON('plans/plans.json', plans);
 
 		return { success: true, migrated };
+	});
+
+	// Lektionen
+	// Parses filename like: 20260422-week17-mittwoch-mathematik-5a-1.yaml
+	function parseLektionFilename(filename) {
+		const base = filename.replace(/\.yaml$/, '');
+		const parts = base.split('-');
+		if (parts.length < 6) return null;
+
+		const datumRaw = parts[0]; // yyyymmdd
+		const woche = parts[1]; // week17
+		const wochentag = parts[2];
+		// fach and klasse can contain hyphens, lektionszahl is the last segment
+		const lektionszahl = parseInt(parts[parts.length - 1], 10);
+		const klasse = parts[parts.length - 2];
+		const fach = parts.slice(3, parts.length - 2).join('-');
+
+		const datum = `${datumRaw.slice(0, 4)}-${datumRaw.slice(4, 6)}-${datumRaw.slice(6, 8)}`;
+		const wocheNr = parseInt(woche.replace('week', ''), 10);
+
+		return { filename, datum, datumRaw, woche: wocheNr, wochentag, fach, klasse, lektionszahl };
+	}
+
+	function buildLektionFilename(meta) {
+		const datumRaw = meta.datum.replace(/-/g, '');
+		const woche = `week${String(meta.woche).padStart(2, '0')}`;
+		const fach = meta.fach.toLowerCase().replace(/\s+/g, '-').replace(/[äöü]/g, (c) => ({ ä: 'ae', ö: 'oe', ü: 'ue' }[c]));
+		const klasse = meta.klasse.toLowerCase().replace(/\s+/g, '');
+		const wochentag = meta.wochentag.toLowerCase();
+		return `${datumRaw}-${woche}-${wochentag}-${fach}-${klasse}-${meta.lektionszahl}.yaml`;
+	}
+
+	ipcMain.handle('lektionen:list', async () => {
+		const files = await fileManager.listLektionen();
+		const result = [];
+		for (const filename of files) {
+			const meta = parseLektionFilename(filename);
+			if (meta) result.push(meta);
+		}
+		return result;
+	});
+
+	ipcMain.handle('lektionen:get', async (event, filename) => {
+		const data = await fileManager.readYAML(`lektionen/${filename}`);
+		if (!data) return null;
+		return { ...data, _filename: filename };
+	});
+
+	ipcMain.handle('lektionen:save', async (event, data) => {
+		const { _filename: oldFilename, ...lektionData } = data;
+
+		// Build new filename from metadata in the data
+		const newFilename = buildLektionFilename({
+			datum: lektionData.datum,
+			woche: lektionData.woche,
+			wochentag: lektionData.wochentag,
+			fach: lektionData.fach,
+			klasse: lektionData.klasse,
+			lektionszahl: lektionData.lektionszahl
+		});
+
+		// If filename changed, delete old file
+		if (oldFilename && oldFilename !== newFilename) {
+			await fileManager.deleteFile(`lektionen/${oldFilename}`);
+		}
+
+		await fileManager.writeYAML(`lektionen/${newFilename}`, lektionData);
+		return { success: true, filename: newFilename };
+	});
+
+	ipcMain.handle('lektionen:delete', async (event, filename) => {
+		await fileManager.deleteFile(`lektionen/${filename}`);
+		return { success: true };
+	});
+
+	ipcMain.handle('lektionen:copy', async (event, filename, opts) => {
+		// opts: { zielDatum, zielKlasse }
+		const source = await fileManager.readYAML(`lektionen/${filename}`);
+		if (!source) return { success: false, error: 'Quelldatei nicht gefunden' };
+
+		const kopie = { ...source };
+
+		if (opts.zielDatum) {
+			const d = new Date(opts.zielDatum);
+			kopie.datum = opts.zielDatum;
+			// Recalculate week number
+			const startOfYear = new Date(d.getFullYear(), 0, 1);
+			const dayOfYear = Math.floor((d - startOfYear) / 86400000);
+			kopie.woche = Math.ceil((dayOfYear + startOfYear.getDay() + 1) / 7);
+			// Recalculate weekday
+			const tage = ['sonntag', 'montag', 'dienstag', 'mittwoch', 'donnerstag', 'freitag', 'samstag'];
+			kopie.wochentag = tage[d.getDay()];
+		}
+
+		if (opts.zielKlasse) {
+			kopie.klasse = opts.zielKlasse;
+		}
+
+		const newFilename = buildLektionFilename({
+			datum: kopie.datum,
+			woche: kopie.woche,
+			wochentag: kopie.wochentag,
+			fach: kopie.fach,
+			klasse: kopie.klasse,
+			lektionszahl: kopie.lektionszahl
+		});
+
+		await fileManager.writeYAML(`lektionen/${newFilename}`, kopie);
+		return { success: true, filename: newFilename };
+	});
+
+	ipcMain.handle('lektionen:copyWeek', async (event, quellWoche, zielDatumErsterTag, zielKlasse) => {
+		// quellWoche: KW-Nummer (number)
+		// zielDatumErsterTag: ISO-Datum des Montags der Zielwoche
+		// zielKlasse: optional, überschreibt Klasse
+		const allFiles = await fileManager.listLektionen();
+		const quellLektionen = allFiles
+			.map(parseLektionFilename)
+			.filter((m) => m && m.woche === quellWoche);
+
+		if (quellLektionen.length === 0) {
+			return { success: false, error: `Keine Lektionen in KW ${quellWoche} gefunden` };
+		}
+
+		const zielMontag = new Date(zielDatumErsterTag);
+		const tageMap = { montag: 0, dienstag: 1, mittwoch: 2, donnerstag: 3, freitag: 4, samstag: 5, sonntag: 6 };
+		const tage = ['sonntag', 'montag', 'dienstag', 'mittwoch', 'donnerstag', 'freitag', 'samstag'];
+		const created = [];
+
+		for (const meta of quellLektionen) {
+			const source = await fileManager.readYAML(`lektionen/${meta.filename}`);
+			if (!source) continue;
+
+			const kopie = { ...source };
+			const offset = tageMap[meta.wochentag] ?? 0;
+			const zielTag = new Date(zielMontag);
+			zielTag.setDate(zielMontag.getDate() + offset);
+
+			kopie.datum = zielTag.toISOString().slice(0, 10);
+			kopie.wochentag = tage[zielTag.getDay()];
+
+			// Recalculate KW
+			const startOfYear = new Date(zielTag.getFullYear(), 0, 1);
+			const dayOfYear = Math.floor((zielTag - startOfYear) / 86400000);
+			kopie.woche = Math.ceil((dayOfYear + startOfYear.getDay() + 1) / 7);
+
+			if (zielKlasse) kopie.klasse = zielKlasse;
+
+			const newFilename = buildLektionFilename({
+				datum: kopie.datum,
+				woche: kopie.woche,
+				wochentag: kopie.wochentag,
+				fach: kopie.fach,
+				klasse: kopie.klasse,
+				lektionszahl: kopie.lektionszahl
+			});
+
+			await fileManager.writeYAML(`lektionen/${newFilename}`, kopie);
+			created.push(newFilename);
+		}
+
+		return { success: true, created };
 	});
 
 	// Multi-Window
@@ -343,9 +507,8 @@ function registerHandlers(fileManager, windowManager, settingsManager) {
 			const newPath = result.filePaths[0];
 			await settingsManager.setWorkingDirectory(newPath);
 
-			// Update file manager base path (including .atelier subdirectory)
-			const path = require('path');
-			fileManager.basePath = path.join(newPath, '.atelier');
+			// Update file manager base path
+			fileManager.basePath = newPath;
 			await fileManager.ensureDirectories();
 
 			return newPath;

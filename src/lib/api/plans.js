@@ -47,7 +47,10 @@ export const plansAPI = {
 		if (typeof window === 'undefined' || !window.electronAPI) {
 			return plan;
 		}
-		return await window.electronAPI.savePlan(plan);
+		// Ensure the plan is serializable by doing a final JSON round-trip
+		// This removes any remaining proxies or non-serializable objects
+		const serializablePlan = JSON.parse(JSON.stringify(plan));
+		return await window.electronAPI.savePlan(serializablePlan);
 	},
 
 	/**
@@ -61,7 +64,9 @@ export const plansAPI = {
 		if (typeof window === 'undefined' || !window.electronAPI) {
 			return { content, frontmatter };
 		}
-		return await window.electronAPI.savePlanMarkdown(planId, content, frontmatter);
+		// Ensure frontmatter is serializable
+		const serializableFrontmatter = JSON.parse(JSON.stringify(frontmatter));
+		return await window.electronAPI.savePlanMarkdown(planId, content, serializableFrontmatter);
 	},
 
 	/**

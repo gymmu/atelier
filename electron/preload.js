@@ -49,6 +49,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
 	deletePlan: (planId) => ipcRenderer.invoke('plans:delete', planId),
 	migratePlans: (localStoragePlans) => ipcRenderer.invoke('plans:migrate', localStoragePlans),
 
+	// Lektionen
+	getLektionen: () => ipcRenderer.invoke('lektionen:list'),
+	getLektion: (filename) => ipcRenderer.invoke('lektionen:get', filename),
+	saveLektion: (data) => ipcRenderer.invoke('lektionen:save', data),
+	deleteLektion: (filename) => ipcRenderer.invoke('lektionen:delete', filename),
+	copyLektion: (filename, opts) => ipcRenderer.invoke('lektionen:copy', filename, opts),
+	copyLektionWeek: (quellWoche, zielDatumErsterTag, zielKlasse) =>
+		ipcRenderer.invoke('lektionen:copyWeek', quellWoche, zielDatumErsterTag, zielKlasse),
+
 	// Multi-Window
 	openDisplayWindow: () => ipcRenderer.invoke('window:open-display'),
 	closeDisplayWindow: () => ipcRenderer.invoke('window:close-display'),

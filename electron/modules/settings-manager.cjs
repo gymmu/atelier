@@ -15,7 +15,7 @@ class SettingsManager {
 	}
 
 	/**
-	 * Load settings with hierarchy: local (.atelier/settings.json) before global
+	 * Load settings with hierarchy: local (settings.json in working directory) before global
 	 */
 	async load() {
 		await this.ensureConfigDirectory();
@@ -25,7 +25,7 @@ class SettingsManager {
 		
 		// If we have a working directory, check for local settings
 		if (globalSettings?.workingDirectory) {
-			this.localSettingsFile = path.join(globalSettings.workingDirectory, '.atelier', 'settings.json');
+			this.localSettingsFile = path.join(globalSettings.workingDirectory, 'settings.json');
 			const localSettings = await this.loadFromFile(this.localSettingsFile);
 			
 			if (localSettings) {
@@ -115,10 +115,10 @@ class SettingsManager {
 		await this.addToRecentDirectories(dirPath);
 		
 		// Update local settings file path
-		this.localSettingsFile = path.join(dirPath, '.atelier', 'settings.json');
+		this.localSettingsFile = path.join(dirPath, 'settings.json');
 		
-		// Create .atelier directory
-		await fs.mkdir(path.join(dirPath, '.atelier'), { recursive: true });
+		// Ensure working directory exists
+		await fs.mkdir(dirPath, { recursive: true });
 	}
 
 	async addToRecentDirectories(dirPath) {

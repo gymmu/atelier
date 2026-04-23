@@ -1,52 +1,105 @@
 <script>
 	import { scheduleStore } from '$lib/stores/schedule.svelte.js';
+	import { lektionenStore } from '$lib/stores/lektionen.svelte.js';
+	import { gruppiereNachKW } from '$lib/utils/lektion-parser.js';
 
 	let { isOpen = $bindable(false) } = $props();
+
+	let activeTab = $state('lektionen');
 
 	function handleSelectSchedule(id) {
 		scheduleStore.setCurrentSchedule(id);
 		isOpen = false;
 	}
 
+	async function handleSelectLektion(filename) {
+		const lektion = await lektionenStore.loadLektion(filename);
+		if (lektion) {
+			scheduleStore.setCurrentLektion(lektion);
+		}
+		isOpen = false;
+	}
+
 	let schedules = $derived(scheduleStore.schedules);
 	let currentScheduleId = $derived(scheduleStore.currentScheduleId);
+	let lektionen = $derived(lektionenStore.list);
+	let lektionenNachKW = $derived(gruppiereNachKW(lektionen));
+	let sortedKWs = $derived([...lektionenNachKW.keys()].sort((a, b) => b - a));
 </script>
 
 <div class="schedule-selector" class:open={isOpen}>
 	<div class="selector-header">
-		<h3>Zeitpläne</h3>
+		<h3>Auswahl</h3>
 		<button class="btn-close" onclick={() => (isOpen = false)} title="Schließen">
 			✕
 		</button>
 	</div>
 
-	<div class="schedules-list">
-		{#if schedules.length === 0}
-			<div class="empty-state">
-				<p>Keine Zeitpläne vorhanden.</p>
-				<p>Erstellen Sie zuerst einen Zeitplan im Admin-Bereich.</p>
-			</div>
-		{:else}
-			{#each schedules as schedule (schedule.id)}
-				<button
-					class="schedule-item"
-					class:active={schedule.id === currentScheduleId}
-					onclick={() => handleSelectSchedule(schedule.id)}
-				>
-					<div class="schedule-info">
-						<div class="schedule-name">{schedule.name}</div>
-						<div class="schedule-meta">
-							{schedule.phases.length} Phasen
-							{#if schedule.phases.length > 0}
-								· {schedule.phases.reduce((sum, p) => sum + p.duration, 0)} Min.
-							{/if}
-						</div>
+	<div class="tabs">
+		<button class="tab" class:active={activeTab === 'lektionen'} onclick={() => (activeTab = 'lektionen')}>
+			Lektionen
+		</button>
+		<button class="tab" class:active={activeTab === 'plaene'} onclick={() => (activeTab = 'plaene')}>
+			Pläne
+		</button>
+	</div>
+
+	<div class="list">
+		{#if activeTab === 'lektionen'}
+			{#if lektionen.length === 0}
+				<div class="empty-state">
+					<p>Keine Lektionen vorhanden.</p>
+				</div>
+			{:else}
+				{#each sortedKWs as kw}
+					<div class="kw-group">
+						<div class="kw-label">KW {kw}</div>
+						{#each lektionenNachKW.get(kw) as l (l.filename)}
+							{@const isActive = scheduleStore.currentScheduleId === l.filename}
+							<button
+								class="item"
+								class:active={isActive}
+								onclick={() => handleSelectLektion(l.filename)}
+							>
+								<div class="item-info">
+									<div class="item-name">{l.fach} {l.klasse}</div>
+									<div class="item-meta">{l.datum} · {l.wochentag} · {l.lektionszahl}. Lektion</div>
+								</div>
+								{#if isActive}
+									<div class="active-indicator">✓</div>
+								{/if}
+							</button>
+						{/each}
 					</div>
-					{#if schedule.id === currentScheduleId}
-						<div class="active-indicator">✓</div>
-					{/if}
-				</button>
-			{/each}
+				{/each}
+			{/if}
+		{:else}
+			{#if schedules.length === 0}
+				<div class="empty-state">
+					<p>Keine Pläne vorhanden.</p>
+				</div>
+			{:else}
+				{#each schedules as schedule (schedule.id)}
+					<button
+						class="item"
+						class:active={schedule.id === currentScheduleId}
+						onclick={() => handleSelectSchedule(schedule.id)}
+					>
+						<div class="item-info">
+							<div class="item-name">{schedule.name}</div>
+							<div class="item-meta">
+								{schedule.phases.length} Phasen
+								{#if schedule.phases.length > 0}
+									· {Math.round(schedule.phases.reduce((sum, p) => sum + p.duration, 0) / 60)} Min.
+								{/if}
+							</div>
+						</div>
+						{#if schedule.id === currentScheduleId}
+							<div class="active-indicator">✓</div>
+						{/if}
+					</button>
+				{/each}
+			{/if}
 		{/if}
 	</div>
 </div>
@@ -72,8 +125,8 @@
 	.schedule-selector {
 		position: fixed;
 		top: 0;
-		right: -400px;
-		width: 400px;
+		right: -420px;
+		width: 420px;
 		height: 100vh;
 		background: var(--color-bg-dark);
 		border-left: 1px solid rgba(255, 255, 255, 0.1);
@@ -123,16 +176,59 @@
 	.btn-close:hover {
 		background: rgba(255, 255, 255, 0.1);
 		border-color: rgba(255, 255, 255, 0.2);
-		transform: scale(1.05);
 	}
 
-	.schedules-list {
+	.tabs {
+		display: flex;
+		border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+	}
+
+	.tab {
+		flex: 1;
+		padding: 0.875rem;
+		background: transparent;
+		border: none;
+		border-bottom: 2px solid transparent;
+		color: var(--color-text-secondary);
+		font-size: 0.9rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.tab:hover {
+		color: var(--color-text);
+		background: rgba(255, 255, 255, 0.04);
+	}
+
+	.tab.active {
+		color: var(--color-primary);
+		border-bottom-color: var(--color-primary);
+	}
+
+	.list {
 		flex: 1;
 		overflow-y: auto;
-		padding: 1.5rem;
+		padding: 1rem;
 		display: flex;
 		flex-direction: column;
-		gap: 0.75rem;
+		gap: 0.5rem;
+	}
+
+	.kw-group {
+		display: flex;
+		flex-direction: column;
+		gap: 0.375rem;
+		margin-bottom: 0.5rem;
+	}
+
+	.kw-label {
+		font-size: 0.7rem;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--color-text-secondary);
+		padding: 0.25rem 0.5rem;
 	}
 
 	.empty-state {
@@ -144,15 +240,14 @@
 	.empty-state p {
 		margin: 0.5rem 0;
 		font-size: 0.875rem;
-		line-height: 1.5;
 	}
 
-	.schedule-item {
+	.item {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 		gap: 1rem;
-		padding: 1.25rem;
+		padding: 1rem 1.25rem;
 		background: var(--color-bg-darker);
 		border-radius: 8px;
 		border: 2px solid rgba(255, 255, 255, 0.05);
@@ -162,90 +257,62 @@
 		width: 100%;
 	}
 
-	.schedule-item:hover {
+	.item:hover {
 		border-color: rgba(255, 255, 255, 0.2);
 		transform: translateX(-4px);
 		background: rgba(255, 255, 255, 0.03);
 	}
 
-	.schedule-item.active {
+	.item.active {
 		border-color: var(--color-primary);
 		background: rgba(0, 123, 192, 0.15);
 	}
 
-	.schedule-item.active:hover {
+	.item.active:hover {
 		background: rgba(0, 123, 192, 0.2);
 	}
 
-	.schedule-info {
+	.item-info {
 		flex: 1;
 		min-width: 0;
 	}
 
-	.schedule-name {
+	.item-name {
 		font-weight: 600;
-		font-size: 1.125rem;
+		font-size: 1rem;
 		color: var(--color-text);
-		margin-bottom: 0.375rem;
+		margin-bottom: 0.25rem;
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
 	}
 
-	.schedule-meta {
-		font-size: 0.875rem;
+	.item-meta {
+		font-size: 0.8rem;
 		color: var(--color-text-secondary);
 	}
 
 	.active-indicator {
-		font-size: 1.5rem;
+		font-size: 1.25rem;
 		color: var(--color-primary);
 		line-height: 1;
 	}
 
-	/* Scrollbar styling */
-	.schedules-list::-webkit-scrollbar {
+	.list::-webkit-scrollbar {
 		width: 8px;
 	}
 
-	.schedules-list::-webkit-scrollbar-track {
+	.list::-webkit-scrollbar-track {
 		background: rgba(255, 255, 255, 0.05);
 		border-radius: 4px;
 	}
 
-	.schedules-list::-webkit-scrollbar-thumb {
+	.list::-webkit-scrollbar-thumb {
 		background: rgba(255, 255, 255, 0.1);
 		border-radius: 4px;
 	}
 
-	.schedules-list::-webkit-scrollbar-thumb:hover {
+	.list::-webkit-scrollbar-thumb:hover {
 		background: rgba(255, 255, 255, 0.2);
-	}
-
-	@media (max-width: 768px) {
-		.schedule-selector {
-			width: 100%;
-			right: -100%;
-		}
-
-		.selector-header {
-			padding: 1rem;
-		}
-
-		h3 {
-			font-size: 1.25rem;
-		}
-
-		.schedules-list {
-			padding: 1rem;
-		}
-
-		.schedule-item {
-			padding: 1rem;
-		}
-
-		.schedule-name {
-			font-size: 1rem;
-		}
 	}
 </style>
