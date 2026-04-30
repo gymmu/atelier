@@ -22,7 +22,11 @@ const config = {
 			strict: false
 		}),
 		paths: {
-			base: ''
+			base: '',
+			relative: true
+		},
+		output: {
+			bundleStrategy: 'inline'
 		}
 	}
 };

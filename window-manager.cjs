@@ -1,4 +1,4 @@
-const { BrowserWindow } = require('electron');
+const { BrowserWindow, app } = require('electron');
 const path = require('path');
 
 class WindowManager {
@@ -24,7 +24,7 @@ class WindowManager {
 		if (this.isDev) {
 			this.mainWindow.loadURL(`http://localhost:${port}`);
 		} else {
-			this.mainWindow.loadURL('app://atelier/');
+			this.mainWindow.loadFile(path.join(app.getAppPath(), 'build/index.html'));
 		}
 
 		const openDevTools = process.env.ELECTRON_DEVTOOLS !== 'false';
@@ -59,7 +59,7 @@ class WindowManager {
 		if (this.isDev) {
 			this.displayWindow.loadURL(`http://localhost:${port}/display`);
 		} else {
-			this.displayWindow.loadURL('app://atelier/display.html');
+			this.displayWindow.loadFile(path.join(app.getAppPath(), 'build/display.html'));
 		}
 
 		const openDevTools = process.env.ELECTRON_DEVTOOLS !== 'false';

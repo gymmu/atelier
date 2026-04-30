@@ -12,6 +12,9 @@ files:
   - package.json
   - node_modules/**/*
 
+asarUnpack:
+  - build/**/*
+
 linux:
   target:
     - AppImage
